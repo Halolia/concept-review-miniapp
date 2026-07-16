@@ -1,0 +1,18 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/projects/projects",
+    "pages/review/review",
+    "pages/summary/summary",
+    "pages/result/result",
+    "pages/project-detail/project-detail",
+    "pages/admin/admin"
+  ],
+  "window": {
+    "navigationBarBackgroundColor": "#1a6fb5",
+    "navigationBarTitleText": "概念验证评审",
+    "navigationBarTextStyle": "white",
+    "backgroundColor": "#f5f6fa"
+  },
+  "sitemapLocation": "sitemap.json"
+}

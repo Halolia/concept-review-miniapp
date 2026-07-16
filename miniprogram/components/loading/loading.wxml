@@ -1,0 +1,7 @@
+<!-- 统一加载组件 -->
+<view wx:if="{{visible}}" class="loading-mask">
+  <view class="loading-box">
+    <view class="loading-spinner"></view>
+    <text class="loading-text">{{text || '加载中…'}}</text>
+  </view>
+</view>

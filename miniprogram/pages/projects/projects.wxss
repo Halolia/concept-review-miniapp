@@ -1,0 +1,64 @@
+.container { padding-bottom: 40rpx; }
+
+.tabs {
+  display: flex;
+  white-space: nowrap;
+  padding: 20rpx;
+  background: #fff;
+  margin-bottom: 10rpx;
+}
+.tab {
+  display: inline-block;
+  padding: 12rpx 32rpx;
+  margin-right: 16rpx;
+  border-radius: 32rpx;
+  font-size: 26rpx;
+  background: var(--bg);
+  color: var(--text-secondary);
+}
+.tab.active {
+  background: var(--primary);
+  color: #fff;
+}
+
+.project-card {
+  padding: 28rpx;
+}
+.project-card + .project-card {
+  margin-top: 0;
+}
+.pc-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16rpx;
+}
+.pc-name {
+  flex: 1;
+  font-size: 30rpx;
+  font-weight: 600;
+  line-height: 1.4;
+}
+.pc-info {
+  display: flex;
+  flex-direction: column;
+  gap: 6rpx;
+  font-size: 24rpx;
+  color: var(--text-secondary);
+}
+.pc-footer {
+  display: flex;
+  align-items: center;
+  margin-top: 16rpx;
+  padding-top: 16rpx;
+  border-top: 1rpx solid var(--border);
+}
+.pc-score {
+  font-size: 28rpx;
+  font-weight: 600;
+  margin-right: 16rpx;
+}
+.pc-grade {
+  font-size: 24rpx;
+  font-weight: 500;
+}

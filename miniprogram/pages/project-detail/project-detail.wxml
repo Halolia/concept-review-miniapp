@@ -1,0 +1,84 @@
+<!-- 项目材料详情页 -->
+<view class="container">
+  <!-- 加载中 -->
+  <view wx:if="{{loading}}" class="empty-state">
+    <text style="font-size:80rpx">⏳</text>
+    <text>加载项目信息…</text>
+  </view>
+
+  <block wx:else>
+    <!-- 项目基本信息 -->
+    <view class="proj-header">
+      <text class="ph-name">{{project.name}}</text>
+      <view class="ph-meta" wx:if="{{project.institution}}">
+        <text>🏛 {{project.institution}}</text>
+        <text wx:if="{{project.leader}}">👤 {{project.leader}}</text>
+      </view>
+    </view>
+
+    <!-- 评审批次信息 -->
+    <view class="card info-card" wx:if="{{currentRound}}">
+      <view class="info-title">当前评审批次</view>
+      <view class="info-row">
+        <text class="info-label">批次名称</text>
+        <text class="info-value">{{currentRound.name}}</text>
+      </view>
+      <view class="info-row">
+        <text class="info-label">批次状态</text>
+        <text class="info-value tag-round-{{currentRound.status}}">{{currentRound.status === 'open' ? '进行中' : currentRound.status === 'closed' ? '已关闭' : '未开放'}}</text>
+      </view>
+      <view class="info-row" wx:if="{{currentRound.deadline}}">
+        <text class="info-label">截止日期</text>
+        <text class="info-value">{{currentRound.deadline}}</text>
+      </view>
+    </view>
+
+    <!-- 评审状态 -->
+    <view class="card status-card">
+      <view class="info-title">我的评审状态</view>
+      <view class="status-badge status-{{assignmentStatus}}">
+        <text wx:if="{{assignmentStatus === 'assigned'}}">⏳ 待评审</text>
+        <text wx:elif="{{assignmentStatus === 'draft'}}">📝 草稿</text>
+        <text wx:elif="{{assignmentStatus === 'submitted'}}">✅ 已提交</text>
+        <text wx:elif="{{assignmentStatus === 'resubmitted'}}">✅ 已重新提交</text>
+        <text wx:elif="{{assignmentStatus === 'returned'}}">↩️ 已退回</text>
+        <text wx:elif="{{assignmentStatus === 'locked'}}">🔒 已锁定</text>
+      </view>
+      <text class="status-hint" wx:if="{{assignmentStatus === 'returned' && returnReason}}">退回原因：{{returnReason}}</text>
+    </view>
+
+    <!-- 项目材料区域（占位） -->
+    <view class="card materials-card">
+      <view class="info-title">项目材料</view>
+      <view class="materials-placeholder">
+        <text style="font-size:60rpx">📄</text>
+        <text class="materials-hint">项目材料将在此展示</text>
+        <text class="materials-sub-hint">管理员可在后台上传项目申报书、PPT等材料</text>
+      </view>
+    </view>
+
+    <!-- 保密提示 -->
+    <view class="card notice-card">
+      <view class="notice-title">🔒 保密提示</view>
+      <text class="notice-text">本项目材料仅供评审使用，请勿外传。评审完成后，您提交的意见将作为正式评审记录保存。</text>
+    </view>
+
+    <!-- 操作按钮 -->
+    <view class="action-area">
+      <button wx:if="{{canReview}}"
+              class="btn btn-primary btn-block"
+              bindtap="goReview">
+        {{assignmentStatus === 'draft' || assignmentStatus === 'returned' ? '继续评审' : '开始评审'}}
+      </button>
+
+      <button wx:if="{{assignmentStatus === 'submitted' || assignmentStatus === 'resubmitted' || assignmentStatus === 'locked'}}"
+              class="btn btn-primary btn-block"
+              bindtap="goReview"
+              disabled="{{assignmentStatus === 'locked'}}">
+        {{assignmentStatus === 'locked' ? '已锁定（不可修改）' : '查看已提交评审'}}
+      </button>
+    </view>
+
+    <view style="height:40rpx"></view>
+  </block>
+</view>

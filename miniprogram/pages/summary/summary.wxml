@@ -1,0 +1,46 @@
+<!-- 评审结果汇总页 -->
+<view class="container">
+  <view wx:if="{{loading}}" class="empty-state">
+    <text style="font-size:80rpx">⏳</text>
+    <text>加载中…</text>
+  </view>
+
+  <block wx:else>
+    <!-- 总览 -->
+    <view class="card overview">
+      <view class="overview-title">评审概览</view>
+      <view class="overview-stats">
+        <view class="ov-item">
+          <text class="ov-num">{{summary.totalProjects}}</text>
+          <text class="ov-label">参评项目</text>
+        </view>
+        <view class="ov-item">
+          <text class="ov-num">{{summary.totalReviews}}</text>
+          <text class="ov-label">评审记录</text>
+        </view>
+        <view class="ov-item">
+          <text class="ov-num done">{{summary.avgScore}}</text>
+          <text class="ov-label">均分</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 排名列表 -->
+    <view class="card ranking-card">
+      <view class="ranking-title">📊 项目得分排名</view>
+
+      <view class="rank-item" wx:for="{{rankings}}" wx:key="projectId"
+            bindtap="goResult" data-id="{{item.projectId}}" data-name="{{item.projectName}}">
+        <view class="rank-badge rank-{{item.rank}}">{{item.rank <= 3 ? ['🥇','🥈','🥉'][item.rank-1] : item.rank}}</view>
+        <view class="rank-info">
+          <text class="rank-name">{{item.projectName}}</text>
+          <text class="rank-institution" wx:if="{{item.institution}}">{{item.institution}}</text>
+        </view>
+        <view class="rank-score-wrap">
+          <text class="rank-score">{{item.avgScore}}</text>
+          <view class="tag tag-{{item.gradeClass}}">{{item.gradeLabel}}</view>
+        </view>
+      </view>
+    </view>
+  </block>
+</view>

@@ -1,0 +1,99 @@
+<!-- 管理员面板 -->
+<view class="container">
+
+  <view wx:if="{{loading}}" class="empty-state">
+    <text style="font-size:80rpx">⏳</text>
+    <text>加载中…</text>
+  </view>
+
+  <block wx:else>
+  <!-- 标签切换 -->
+  <view class="tab-bar">
+    <view class="tab-item {{activeTab==='projects'?'active':''}}" bindtap="switchTab" data-tab="projects">项目管理</view>
+    <view class="tab-item {{activeTab==='assign'?'active':''}}" bindtap="switchTab" data-tab="assign">评委指派</view>
+    <view class="tab-item {{activeTab==='reviewers'?'active':''}}" bindtap="switchTab" data-tab="reviewers">评委管理</view>
+  </view>
+
+  <!-- === 项目管理 === -->
+  <view wx:if="{{activeTab==='projects'}}">
+    <view class="card add-card">
+      <view class="add-title">添加新项目</view>
+      <input class="add-input" placeholder="项目名称 *" value="{{newProject.name}}" bindinput="onProjInput" data-field="name"/>
+      <input class="add-input" placeholder="依托单位" value="{{newProject.institution}}" bindinput="onProjInput" data-field="institution"/>
+      <input class="add-input" placeholder="项目负责人" value="{{newProject.leader}}" bindinput="onProjInput" data-field="leader"/>
+      <input class="add-input" placeholder="项目简介" value="{{newProject.description}}" bindinput="onProjInput" data-field="description"/>
+      <button class="btn btn-primary btn-small" style="margin-top:12rpx" bindtap="addProject">添加项目</button>
+    </view>
+
+    <view class="card" wx:if="{{projects.length > 0}}">
+      <view class="section-title" style="margin-bottom:20rpx">已有项目（{{projects.length}}）</view>
+      <view class="proj-item" wx:for="{{projects}}" wx:key="_id">
+        <view class="pj-info">
+          <text class="pj-name">{{item.name}}</text>
+          <text class="pj-institution">{{item.institution || '未填写'}} {{item.leader ? '· '+item.leader : ''}}</text>
+          <text class="pj-status" wx:if="{{item.status === 'archived'}}" style="color:#ee0a24">【已归档】</text>
+        </view>
+        <view class="pj-actions">
+          <text class="pj-review-count" wx:if="{{item.submittedCount > 0}}">{{item.submittedCount}}人已提交</text>
+          <text class="pj-del" bindtap="archiveProject" data-id="{{item._id}}">归档</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- === 评委指派 === -->
+  <view wx:if="{{activeTab==='assign'}}">
+    <view class="card" wx:for="{{projects}}" wx:key="_id" wx:if="{{item.status !== 'archived'}}">
+      <view class="assign-proj-name">
+        {{item.name}}
+        <text class="assign-count" wx:if="{{item.submittedCount > 0}}">（{{item.submittedCount}}/{{item.assignedReviewers.length}} 已提交）</text>
+      </view>
+      <view class="assign-reviewers">
+        <text class="assign-label">已分配评委：</text>
+        <view class="assign-tags">
+          <view class="assign-tag" wx:for="{{item.assignedReviewers}}" wx:for-item="r" wx:key="id">
+            {{r.name}}
+            <text class="assign-tag-status {{r.status==='submitted'||r.status==='resubmitted'||r.status==='locked'?'tag-good':'tag-pending'}}">
+              {{r.status === 'submitted' ? '✓' : r.status === 'returned' ? '↩' : ''}}
+            </text>
+            <text class="assign-remove" bindtap="removeReviewer"
+                  data-assignment-id="{{r.assignmentId}}"
+                  data-name="{{r.name}}"
+                  data-project-id="{{item._id}}"
+                  data-submitted="{{r.status==='submitted'||r.status==='resubmitted'}}">×</text>
+          </view>
+        </view>
+      </view>
+      <picker range="{{allReviewerNames}}" bindchange="assignReviewer" data-project-id="{{item._id}}">
+        <view class="assign-add-btn">+ 添加评委</view>
+      </picker>
+    </view>
+  </view>
+
+  <!-- === 评委管理 === -->
+  <view wx:if="{{activeTab==='reviewers'}}">
+    <view class="card add-card">
+      <view class="add-title">添加专家</view>
+      <input class="add-input" placeholder="OPENID（可后续绑定）" value="{{newReviewer.openid}}" bindinput="onRevInput" data-field="openid"/>
+      <input class="add-input" placeholder="姓名 *" value="{{newReviewer.name}}" bindinput="onRevInput" data-field="name"/>
+      <input class="add-input" placeholder="单位" value="{{newReviewer.organization}}" bindinput="onRevInput" data-field="organization"/>
+      <input class="add-input" placeholder="职称" value="{{newReviewer.title}}" bindinput="onRevInput" data-field="title"/>
+      <button class="btn btn-primary btn-small" style="margin-top:12rpx" bindtap="addReviewer">添加专家</button>
+    </view>
+
+    <view class="card" wx:if="{{reviewers.length > 0}}">
+      <view class="section-title" style="margin-bottom:20rpx">专家列表（{{reviewers.length}}）</view>
+      <view class="reviewer-item" wx:for="{{reviewers}}" wx:key="_id">
+        <view class="rev-info">
+          <text class="rev-name">{{item.name || item._id}}</text>
+          <text class="rev-detail" wx:if="{{item.organization || item.title}}">{{item.organization}}{{item.title ? ' · ' + item.title : ''}}</text>
+        </view>
+        <view class="rev-actions">
+          <text wx:if="{{item.status === 'active'}}" class="pj-del" bindtap="disableReviewer" data-id="{{item._id}}" data-name="{{item.name}}">停用</text>
+          <text wx:else class="pj-enable" style="color:#07c160" bindtap="enableReviewer" data-id="{{item._id}}">启用</text>
+        </view>
+      </view>
+    </view>
+  </view>
+  </block>
+</view>

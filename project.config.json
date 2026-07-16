@@ -1,0 +1,28 @@
+{
+  "miniprogramRoot": "miniprogram/",
+  "cloudfunctionRoot": "cloudfunctions/",
+  "setting": {
+    "es6": true,
+    "enhance": true,
+    "postcss": true,
+    "minified": true,
+    "coverView": true,
+    "autoAudits": false,
+    "showShadowRootInWxmlPanel": true,
+    "checkInvalidKey": true,
+    "compileHotReLoad": false
+  },
+  "compileType": "miniprogram",
+  "libVersion": "3.6.0",
+  "appid": "wx90c4783463447e09",
+  "projectname": "concept-review-miniapp",
+  "condition": {},
+  "packOptions": {
+    "ignore": [],
+    "include": []
+  },
+  "editorSetting": {
+    "tabIndent": "insertSpaces",
+    "tabSize": 2
+  }
+}

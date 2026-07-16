@@ -1,0 +1,127 @@
+<!-- 评审打分页 -->
+<view class="container">
+
+  <!-- 项目信息头部 -->
+  <view class="proj-header">
+    <text class="proj-name">{{projectName}}</text>
+  </view>
+
+  <!-- 实时总分悬浮条 -->
+  <view class="score-bar">
+    <view class="score-bar-left">
+      <text class="score-bar-total">{{totalScore}}</text>
+      <text class="score-bar-unit">/ 100 分</text>
+    </view>
+    <view class="score-bar-right">
+      <text class="score-bar-grade" style="color:{{grade.color}}">{{grade.label}}</text>
+      <text wx:if="{{reviewStatus}}" class="score-bar-status">（{{reviewStatus === 'submitted' ? '已提交' : reviewStatus === 'returned' ? '已退回' : reviewStatus === 'draft' ? '草稿' : reviewStatus}}）</text>
+    </view>
+  </view>
+
+  <!-- 只读提示 -->
+  <view wx:if="{{isReadonly && !isReturned}}" class="readonly-banner">
+    🔒 评审已提交，当前为只读模式。如需修改请联系管理员退回。
+  </view>
+
+  <!-- 退回提示 -->
+  <view wx:if="{{isReturned}}" class="returned-banner">
+    ↩️ 评审已被退回，请修改后重新提交
+  </view>
+
+  <!-- 六个评分维度 -->
+  <view class="dim-section" wx:for="{{dimensions}}" wx:key="id">
+    <view class="dim-header">
+      <text class="dim-title">{{item.title}}</text>
+      <text class="dim-weight">权重 {{item.weight}} 分</text>
+    </view>
+
+    <view class="item-row" wx:for="{{item.items}}" wx:for-item="sub" wx:key="id">
+      <view class="item-label-wrap">
+        <text class="item-label">{{sub.label}}</text>
+        <text class="item-max">满分 {{sub.maxScore}}</text>
+      </view>
+      <view class="item-score-input">
+        <view class="stepper">
+          <view class="stepper-btn {{scores[sub.id]===0 || (isReadonly && !isReturned) ?'disabled':''}}"
+                bindtap="decrease" data-key="{{sub.id}}" data-max="{{sub.maxScore}}">−</view>
+          <input class="stepper-value" type="number"
+                 value="{{scores[sub.id]}}"
+                 min="0" max="{{sub.maxScore}}"
+                 data-key="{{sub.id}}"
+                 bindinput="onManualInput"
+                 bindblur="onBlurCheck"
+                 placeholder="0"
+                 disabled="{{isReadonly && !isReturned}}"/>
+          <view class="stepper-btn {{(isReadonly && !isReturned)?'disabled':''}}"
+                bindtap="increase" data-key="{{sub.id}}" data-max="{{sub.maxScore}}">+</view>
+        </view>
+        <text class="item-max-hint">/ {{sub.maxScore}}</text>
+      </view>
+      <view class="score-bar-mini">
+        <view class="score-bar-mini-fill" style="width:{{scores[sub.id]/sub.maxScore*100}}%; background:{{getBarColor(scores[sub.id], sub.maxScore)}}"></view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 建议经费 -->
+  <view class="card">
+    <view class="section-title">建议经费额度（万元）</view>
+    <input class="name-input" type="digit"
+           placeholder="请输入建议经费额度"
+           value="{{recommendedFunding}}"
+           bindinput="onFundingInput"
+           disabled="{{isReadonly && !isReturned}}"/>
+  </view>
+
+  <!-- 经费说明 -->
+  <view class="card">
+    <view class="section-title">经费说明</view>
+    <textarea class="comment-input"
+              placeholder="请说明经费建议的理由…"
+              value="{{fundingComment}}"
+              bindinput="onFundingCommentInput"
+              auto-height
+              maxlength="1000"
+              disabled="{{isReadonly && !isReturned}}"/>
+  </view>
+
+  <!-- 评审意见 -->
+  <view class="card comment-section">
+    <view class="section-title">评审意见和建议</view>
+    <textarea class="comment-input"
+              placeholder="请输入评审意见、建议经费额度等…"
+              value="{{comments}}"
+              bindinput="onCommentInput"
+              auto-height
+              maxlength="2000"
+              disabled="{{isReadonly && !isReturned}}"/>
+  </view>
+
+  <!-- 评审人姓名 -->
+  <view class="card sign-section">
+    <view class="section-title">评审专家</view>
+    <input class="name-input"
+           placeholder="{{reviewerName || '当前登录用户'}}"
+           value="{{reviewerName}}"
+           bindinput="onNameInput"
+           disabled="{{true}}"/>
+    <text class="sign-hint" wx:if="{{!reviewerName}}">姓名由系统根据登录账号自动获取</text>
+  </view>
+
+  <!-- 操作按钮 -->
+  <view class="submit-area" wx:if="{{!isReadonly || isReturned}}">
+    <button class="btn btn-primary btn-block submit-btn"
+            bindtap="saveDraft"
+            disabled="{{saving}}">
+      {{saving ? '保存中…' : '保存草稿'}}
+    </button>
+    <button class="btn btn-primary btn-block submit-btn"
+            bindtap="submitReview"
+            disabled="{{submitting}}"
+            style="margin-top:16rpx; background:{{isReturned ? '#52c41a' : '#1a6fb5'}}">
+      {{submitting ? '提交中…' : (isReturned ? '重新提交' : '提交评审')}}
+    </button>
+  </view>
+
+  <view style="height:60rpx"></view>
+</view>
