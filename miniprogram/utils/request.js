@@ -371,6 +371,11 @@ async function localFallback(action, data) {
       return { ok: true, data: myAssignments };
     }
 
+    case 'expertGetMyReview': {
+      const rev2 = debugData.reviews.find(r => r.assignmentId === data.assignmentId);
+      return { ok: true, data: rev2 || null };
+    }
+
     case 'expertGetReviewDraft': {
       const rev = debugData.reviews.find(r => r.assignmentId === data.assignmentId && r.status === 'draft');
       return { ok: true, data: rev || null };

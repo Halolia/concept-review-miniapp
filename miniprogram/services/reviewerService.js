@@ -36,9 +36,18 @@ async function adminEnableUser(userId) {
   return res.data;
 }
 
+/**
+ * 管理员绑定用户OPENID
+ */
+async function adminBindUserOpenid(userId, openid) {
+  const res = await call('adminBindUserOpenid', { userId, openid });
+  return res.data;
+}
+
 module.exports = {
   adminListUsers,
   adminCreateOrBindUser,
   adminDisableUser,
-  adminEnableUser
+  adminEnableUser,
+  adminBindUserOpenid
 };

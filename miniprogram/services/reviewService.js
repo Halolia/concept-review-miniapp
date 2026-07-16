@@ -5,11 +5,19 @@
 const { call } = require('../utils/request');
 
 /**
- * 专家：获取评审草稿
+ * 专家：获取评审草稿（已废弃，请用 expertGetMyReview）
  */
 async function expertGetReviewDraft(assignmentId) {
   const res = await call('expertGetReviewDraft', { assignmentId });
-  return res.data; // null 表示无草稿
+  return res.data;
+}
+
+/**
+ * 专家：获取我的评审记录（不限状态）
+ */
+async function expertGetMyReview(assignmentId) {
+  const res = await call('expertGetMyReview', { assignmentId });
+  return res.data;
 }
 
 /**
@@ -53,6 +61,7 @@ async function adminGetProjectResult(projectId, roundId) {
 
 module.exports = {
   expertGetReviewDraft,
+  expertGetMyReview,
   expertSaveReviewDraft,
   expertSubmitReview,
   adminReturnReview,

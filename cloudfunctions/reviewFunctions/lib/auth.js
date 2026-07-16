@@ -12,16 +12,18 @@ const ALLOWED_ROLES = {
   adminArchiveProject:         ['admin'],
   adminListUsers:              ['admin'],
   adminCreateOrBindUser:       ['admin'],
+  adminBindUserOpenid:         ['admin'],
   adminDisableUser:            ['admin'],
   adminEnableUser:             ['admin'],
   adminListAssignments:        ['admin'],
   adminAssignExpert:           ['admin'],
   adminRemoveAssignment:       ['admin'],
   adminReturnReview:           ['admin'],
-  adminGetProjectResult:       ['admin'],
+  adminGetProjectResult:       ['admin', 'leader'],
   adminGetSummary:             ['admin'],
   adminListReviewRounds:       ['admin'],
   adminCreateReviewRound:      ['admin'],
+  adminUpdateReviewRound:      ['admin'],
   adminOpenReviewRound:        ['admin'],
   adminCloseReviewRound:       ['admin'],
 
@@ -29,12 +31,14 @@ const ALLOWED_ROLES = {
   expertListProjects:          ['expert'],
   expertGetProjectDetail:      ['expert'],
   expertListAssignments:       ['expert'],
+  expertGetMyReview:           ['expert'],
   expertGetReviewDraft:        ['expert'],
   expertSaveReviewDraft:       ['expert'],
   expertSubmitReview:          ['expert'],
 
   // 管理员 + 领导
   leaderGetSummary:            ['admin', 'leader'],
+  leaderGetProjectResult:      ['admin', 'leader'],
 };
 
 /**

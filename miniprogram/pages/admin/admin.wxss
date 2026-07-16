@@ -90,3 +90,187 @@
   font-size: 28rpx;
 }
 .reviewer-item:last-child { border-bottom: none; }
+
+/* 评委管理 - 新增 */
+.rev-info { flex: 1; min-width: 0; }
+.rev-name-row {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+.rev-name { font-size: 26rpx; font-weight: 500; }
+.rev-detail { font-size: 22rpx; color: var(--text-secondary); margin-top: 4rpx; display: block; }
+.rev-bind-status {
+  font-size: 20rpx;
+  padding: 2rpx 10rpx;
+  border-radius: 4rpx;
+}
+.rev-bind-status.status-bound {
+  background: #e8f8ee;
+  color: #07c160;
+}
+.rev-bind-status.status-pending {
+  background: #fff3e0;
+  color: #ff976a;
+}
+
+.rev-actions {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  flex-shrink: 0;
+  margin-left: 16rpx;
+}
+.rev-action-btn {
+  font-size: 22rpx;
+  padding: 6rpx 14rpx;
+  border-radius: 6rpx;
+  white-space: nowrap;
+}
+.rev-action-bind { color: var(--primary); border: 1rpx solid var(--primary); }
+.rev-action-unbind { color: #ff976a; border: 1rpx solid #ff976a; }
+.rev-action-disable { color: var(--danger); border: 1rpx solid var(--danger); }
+.rev-action-enable { color: #07c160; border: 1rpx solid #07c160; }
+.rev-action-confirm { color: #fff; background: var(--primary); }
+.rev-action-cancel { color: var(--text-secondary); border: 1rpx solid var(--border); }
+
+.bind-input-inline {
+  width: 180rpx;
+  padding: 6rpx 10rpx;
+  background: var(--bg);
+  border-radius: 6rpx;
+  font-size: 22rpx;
+  box-sizing: border-box;
+}
+
+/* 批次选择器（指派 Tab） */
+.round-radio-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+}
+.round-radio-item {
+  display: flex;
+  align-items: center;
+  padding: 14rpx 16rpx;
+  border-radius: 8rpx;
+  background: var(--bg);
+  border: 2rpx solid transparent;
+}
+.round-radio-item.round-radio-active {
+  border-color: var(--primary);
+  background: var(--primary-light);
+}
+.round-radio-dot {
+  width: 32rpx;
+  height: 32rpx;
+  border-radius: 50%;
+  border: 3rpx solid var(--border);
+  margin-right: 16rpx;
+  flex-shrink: 0;
+}
+.round-radio-dot-checked {
+  border-color: var(--primary);
+  background: var(--primary);
+  box-shadow: inset 0 0 0 4rpx #fff;
+}
+.round-radio-label {
+  flex: 1;
+  font-size: 26rpx;
+}
+.round-radio-status {
+  font-size: 20rpx;
+  padding: 2rpx 10rpx;
+  border-radius: 4rpx;
+  flex-shrink: 0;
+}
+
+/* 批次状态标签 */
+.status-open {
+  background: #e8f8ee;
+  color: #07c160;
+}
+.status-closed {
+  background: #f5f5f5;
+  color: #999;
+}
+.status-draft {
+  background: #fff3e0;
+  color: #ff976a;
+}
+
+/* 评审批次 Tab */
+.round-item {
+  display: flex;
+  align-items: center;
+  padding: 20rpx 0;
+  border-bottom: 1rpx solid var(--border);
+}
+.round-item:last-child { border-bottom: none; }
+.round-select-area {
+  margin-right: 12rpx;
+  flex-shrink: 0;
+}
+.round-info {
+  flex: 1;
+  min-width: 0;
+}
+.round-name {
+  font-size: 28rpx;
+  font-weight: 500;
+  display: block;
+}
+.round-no {
+  font-size: 22rpx;
+  color: var(--text-secondary);
+  display: block;
+  margin-top: 4rpx;
+}
+.round-deadline {
+  font-size: 22rpx;
+  color: var(--text-secondary);
+  display: block;
+  margin-top: 2rpx;
+}
+.round-actions {
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+  flex-shrink: 0;
+  margin-left: 12rpx;
+}
+.round-status-badge {
+  font-size: 20rpx;
+  padding: 4rpx 12rpx;
+  border-radius: 4rpx;
+}
+.round-action-edit {
+  color: var(--primary);
+  border: 1rpx solid var(--primary);
+}
+.round-edit-area {
+  flex: 1;
+  min-width: 0;
+}
+.round-edit-actions {
+  display: flex;
+  gap: 12rpx;
+  margin-top: 4rpx;
+}
+.round-edit-actions .rev-action-btn {
+  font-size: 24rpx;
+  padding: 8rpx 20rpx;
+}
+
+/* 项目相关补充 */
+.pj-actions {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  margin-left: 16rpx;
+}
+.pj-review-count {
+  font-size: 22rpx;
+  color: var(--text-secondary);
+  margin-right: 16rpx;
+}

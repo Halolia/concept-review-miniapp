@@ -14,7 +14,6 @@
     </view>
     <view class="score-bar-right">
       <text class="score-bar-grade" style="color:{{grade.color}}">{{grade.label}}</text>
-      <text wx:if="{{reviewStatus}}" class="score-bar-status">（{{reviewStatus === 'submitted' ? '已提交' : reviewStatus === 'returned' ? '已退回' : reviewStatus === 'draft' ? '草稿' : reviewStatus}}）</text>
     </view>
   </view>
 
@@ -25,7 +24,8 @@
 
   <!-- 退回提示 -->
   <view wx:if="{{isReturned}}" class="returned-banner">
-    ↩️ 评审已被退回，请修改后重新提交
+    ↩️ 评审已被退回
+    <text wx:if="{{returnReason}}" class="returned-reason">原因：{{returnReason}}</text>
   </view>
 
   <!-- 六个评分维度 -->
@@ -42,23 +42,24 @@
       </view>
       <view class="item-score-input">
         <view class="stepper">
-          <view class="stepper-btn {{scores[sub.id]===0 || (isReadonly && !isReturned) ?'disabled':''}}"
+          <view class="stepper-btn {{sub.currentScore===0 || (isReadonly && !isReturned) || reviewStatus==='locked' ?'disabled':''}}"
                 bindtap="decrease" data-key="{{sub.id}}" data-max="{{sub.maxScore}}">−</view>
           <input class="stepper-value" type="number"
-                 value="{{scores[sub.id]}}"
+                 value="{{sub.currentScore}}"
                  min="0" max="{{sub.maxScore}}"
                  data-key="{{sub.id}}"
                  bindinput="onManualInput"
                  bindblur="onBlurCheck"
                  placeholder="0"
-                 disabled="{{isReadonly && !isReturned}}"/>
-          <view class="stepper-btn {{(isReadonly && !isReturned)?'disabled':''}}"
+                 disabled="{{(isReadonly && !isReturned) || reviewStatus==='locked'}}"/>
+          <view class="stepper-btn {{(isReadonly && !isReturned) || reviewStatus==='locked'?'disabled':''}}"
                 bindtap="increase" data-key="{{sub.id}}" data-max="{{sub.maxScore}}">+</view>
         </view>
         <text class="item-max-hint">/ {{sub.maxScore}}</text>
       </view>
+      <!-- 进度条：使用预计算字段 -->
       <view class="score-bar-mini">
-        <view class="score-bar-mini-fill" style="width:{{scores[sub.id]/sub.maxScore*100}}%; background:{{getBarColor(scores[sub.id], sub.maxScore)}}"></view>
+        <view class="score-bar-mini-fill" style="width:{{sub.progressPercent}}%; background:{{sub.progressColor}}"></view>
       </view>
     </view>
   </view>
@@ -70,7 +71,7 @@
            placeholder="请输入建议经费额度"
            value="{{recommendedFunding}}"
            bindinput="onFundingInput"
-           disabled="{{isReadonly && !isReturned}}"/>
+           disabled="{{(isReadonly && !isReturned) || reviewStatus==='locked'}}"/>
   </view>
 
   <!-- 经费说明 -->
@@ -82,7 +83,7 @@
               bindinput="onFundingCommentInput"
               auto-height
               maxlength="1000"
-              disabled="{{isReadonly && !isReturned}}"/>
+              disabled="{{(isReadonly && !isReturned) || reviewStatus==='locked'}}"/>
   </view>
 
   <!-- 评审意见 -->
@@ -94,7 +95,7 @@
               bindinput="onCommentInput"
               auto-height
               maxlength="2000"
-              disabled="{{isReadonly && !isReturned}}"/>
+              disabled="{{(isReadonly && !isReturned) || reviewStatus==='locked'}}"/>
   </view>
 
   <!-- 评审人姓名 -->
@@ -110,14 +111,15 @@
 
   <!-- 操作按钮 -->
   <view class="submit-area" wx:if="{{!isReadonly || isReturned}}">
-    <button class="btn btn-primary btn-block submit-btn"
+    <button wx:if="{{reviewStatus !== 'locked' && reviewStatus !== 'submitted' && reviewStatus !== 'resubmitted'}}"
+            class="btn btn-outline btn-block submit-btn"
             bindtap="saveDraft"
             disabled="{{saving}}">
       {{saving ? '保存中…' : '保存草稿'}}
     </button>
     <button class="btn btn-primary btn-block submit-btn"
             bindtap="submitReview"
-            disabled="{{submitting}}"
+            disabled="{{submitting || reviewStatus === 'locked'}}"
             style="margin-top:16rpx; background:{{isReturned ? '#52c41a' : '#1a6fb5'}}">
       {{submitting ? '提交中…' : (isReturned ? '重新提交' : '提交评审')}}
     </button>

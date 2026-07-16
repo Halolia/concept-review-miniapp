@@ -57,6 +57,31 @@ concept-review-miniapp/
 └── docs/                           # 文档
 ```
 
+## 🔄 V1.0.1 更新（2026-07-16）
+
+### 修复
+- 评分字段名统一 `max` → `maxScore`
+- 修复 0~100 分均可提交（不再强制必须100分）
+- WXML 进度条改用预计算字段（不再直接调 Page 方法）
+- 修复项目详情页导入路径错误
+- 新增 `expertGetMyReview` 支持查询所有状态评审
+- 评审状态机完善：draft/submitted/returned/resubmitted/locked/invalidated
+- 防重复提交：review `_id` = `assignmentId` 保证幂等
+- 汇总重写：遍历所有项目，正确显示 0/3、1/3、3/3
+- 首页统计基于指派数据，不再依赖 `project.reviewers`
+
+### 新增
+- 管理后台评审批次 Tab（创建/选择/开启/关闭）
+- 指派软删除 + 评审作废（不产生孤儿数据）
+- 截止日期校验（超时阻止保存和提交）
+- OPENID 绑定/解绑（替代 placeholder openid）
+- leader 角色只读查看汇总和详情
+- 环境配置 `config/env.js`（正式环境 ID 不提交）
+- 自动化测试：评分 24 项全部通过
+
+### 删除
+- 旧云函数 `quickstartFunctions`（通用 CRUD 接口）
+
 ## 🚀 本地运行（DEBUG 模式）
 
 1. 下载[微信开发者工具](https://developers.weixin.qq.com/miniprogram/dev/devtools/download.html)
@@ -89,9 +114,19 @@ DEBUG 模式下：
 assigned → draft → submitted → (returned → resubmitted) → locked
 ```
 
+## 🧪 运行测试
+
+```bash
+node tests/scoring.test.js
+# 或
+node tests/run-all.js
+```
+
 ## 📖 更多文档
 
 - [云开发部署指南](docs/CLOUD_SETUP.md)
 - [数据库结构说明](docs/DATABASE_SCHEMA.md)
 - [角色权限矩阵](docs/ROLE_PERMISSION.md)
 - [数据迁移指南](docs/MIGRATION.md)
+- [V1.0.1 测试报告](docs/V1.0.1_TEST_REPORT.md)
+- [已知限制](docs/KNOWN_LIMITATIONS.md)
