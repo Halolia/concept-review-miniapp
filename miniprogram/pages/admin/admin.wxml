@@ -12,6 +12,7 @@
     <view class="tab-item {{activeTab==='projects'?'active':''}}" bindtap="switchTab" data-tab="projects">项目管理</view>
     <view class="tab-item {{activeTab==='assign'?'active':''}}" bindtap="switchTab" data-tab="assign">评委指派</view>
     <view class="tab-item {{activeTab==='reviewers'?'active':''}}" bindtap="switchTab" data-tab="reviewers">评委管理</view>
+    <view class="tab-item {{activeTab==='rounds'?'active':''}}" bindtap="switchTab" data-tab="rounds">评审批次</view>
   </view>
 
   <!-- === 项目管理 === -->
@@ -43,6 +44,22 @@
 
   <!-- === 评委指派 === -->
   <view wx:if="{{activeTab==='assign'}}">
+    <!-- 批次选择器 -->
+    <view class="card" wx:if="{{rounds.length > 0}}">
+      <view class="section-title" style="margin-bottom:16rpx">当前评审批次</view>
+      <view class="round-radio-list">
+        <view class="round-radio-item {{selectedRoundId===item._id?'round-radio-active':''}}"
+              wx:for="{{rounds}}" wx:key="_id" bindtap="selectRound" data-id="{{item._id}}">
+          <view class="round-radio-dot {{selectedRoundId===item._id?'round-radio-dot-checked':''}}"></view>
+          <text class="round-radio-label">{{item.name}}（{{item.roundNo}}）</text>
+          <text class="round-radio-status status-{{item.status}}">{{item.status==='open'?'已开启':item.status==='closed'?'已关闭':'草稿'}}</text>
+        </view>
+      </view>
+    </view>
+    <view class="card" wx:if="{{rounds.length === 0}}">
+      <text style="color:var(--text-secondary);font-size:24rpx">请先在"评审批次"中创建并选择批次</text>
+    </view>
+
     <view class="card" wx:for="{{projects}}" wx:key="_id" wx:if="{{item.status !== 'archived'}}">
       <view class="assign-proj-name">
         {{item.name}}
@@ -85,15 +102,86 @@
       <view class="section-title" style="margin-bottom:20rpx">专家列表（{{reviewers.length}}）</view>
       <view class="reviewer-item" wx:for="{{reviewers}}" wx:key="_id">
         <view class="rev-info">
-          <text class="rev-name">{{item.name || item._id}}</text>
+          <view class="rev-name-row">
+            <text class="rev-name">{{item.name || item._id}}</text>
+            <text class="rev-bind-status status-{{item.openid ? 'bound' : 'pending'}}">{{item.openid ? '已绑定' : '待绑定'}}</text>
+          </view>
           <text class="rev-detail" wx:if="{{item.organization || item.title}}">{{item.organization}}{{item.title ? ' · ' + item.title : ''}}</text>
         </view>
         <view class="rev-actions">
-          <text wx:if="{{item.status === 'active'}}" class="pj-del" bindtap="disableReviewer" data-id="{{item._id}}" data-name="{{item.name}}">停用</text>
-          <text wx:else class="pj-enable" style="color:#07c160" bindtap="enableReviewer" data-id="{{item._id}}">启用</text>
+          <!-- 绑定OPENID -->
+          <block wx:if="{{bindingUserId === item._id}}">
+            <input class="bind-input-inline" placeholder="输入OPENID" value="{{bindInputOpenid}}" bindinput="onBindOpenidInput" focus="{{true}}"/>
+            <text class="rev-action-btn rev-action-confirm" bindtap="confirmBindOpenid">确认</text>
+            <text class="rev-action-btn rev-action-cancel" bindtap="cancelBindOpenid">取消</text>
+          </block>
+          <block wx:else>
+            <text wx:if="{{!item.openid}}" class="rev-action-btn rev-action-bind" bindtap="startBindOpenid" data-id="{{item._id}}" data-name="{{item.name}}">绑定OPENID</text>
+            <text wx:if="{{item.openid}}" class="rev-action-btn rev-action-unbind" bindtap="unbindOpenid" data-id="{{item._id}}" data-name="{{item.name}}">解绑</text>
+            <text wx:if="{{item.status === 'active'}}" class="rev-action-btn rev-action-disable" bindtap="disableReviewer" data-id="{{item._id}}" data-name="{{item.name}}">停用</text>
+            <text wx:else class="rev-action-btn rev-action-enable" bindtap="enableReviewer" data-id="{{item._id}}">启用</text>
+          </block>
         </view>
       </view>
     </view>
   </view>
+
+  <!-- === 评审批次 === -->
+  <view wx:if="{{activeTab==='rounds'}}">
+    <!-- 创建新批次 -->
+    <view class="card add-card">
+      <view class="add-title" bindtap="toggleRoundCreate">
+        创建评审批次
+        <text style="font-size:22rpx;color:var(--text-secondary);font-weight:400">{{showRoundCreate ? ' ▲ 收起' : ' ▼ 展开'}}</text>
+      </view>
+      <block wx:if="{{showRoundCreate}}">
+        <input class="add-input" placeholder="批次名称 *（如：2024年第一批）" value="{{newRound.name}}" bindinput="onNewRoundInput" data-field="name"/>
+        <input class="add-input" placeholder="批次号 *（如：2024-01）" value="{{newRound.roundNo}}" bindinput="onNewRoundInput" data-field="roundNo"/>
+        <input class="add-input" placeholder="截止日期（选填，如：2024-12-31）" value="{{newRound.deadline}}" bindinput="onNewRoundInput" data-field="deadline"/>
+        <button class="btn btn-primary btn-small" style="margin-top:12rpx" bindtap="createRound">创建批次</button>
+      </block>
+    </view>
+
+    <!-- 批次列表 -->
+    <view class="card" wx:if="{{rounds.length > 0}}">
+      <view class="section-title" style="margin-bottom:20rpx">已有批次（{{rounds.length}}）</view>
+      <view class="round-item" wx:for="{{rounds}}" wx:key="_id">
+        <!-- 当前选中标识 -->
+        <view class="round-select-area" bindtap="selectRound" data-id="{{item._id}}">
+          <view class="round-radio-dot {{selectedRoundId===item._id?'round-radio-dot-checked':''}}"></view>
+        </view>
+
+        <!-- 编辑中 -->
+        <block wx:if="{{editRoundId === item._id}}">
+          <view class="round-edit-area">
+            <input class="add-input" style="margin-bottom:8rpx" placeholder="批次名称" value="{{editRoundData.name}}" bindinput="onEditRoundInput" data-field="name"/>
+            <input class="add-input" style="margin-bottom:8rpx" placeholder="截止日期" value="{{editRoundData.deadline}}" bindinput="onEditRoundInput" data-field="deadline"/>
+            <view class="round-edit-actions">
+              <text class="rev-action-btn rev-action-confirm" bindtap="saveEditRound">保存</text>
+              <text class="rev-action-btn rev-action-cancel" bindtap="cancelEditRound">取消</text>
+            </view>
+          </view>
+        </block>
+
+        <!-- 查看模式 -->
+        <block wx:else>
+          <view class="round-info">
+            <text class="round-name">{{item.name}}</text>
+            <text class="round-no">批次号：{{item.roundNo}}</text>
+            <text class="round-deadline" wx:if="{{item.deadline}}">截止：{{item.deadline}}</text>
+          </view>
+          <view class="round-actions">
+            <text class="round-status-badge status-{{item.status}}">
+              {{item.status === 'open' ? '已开启' : item.status === 'closed' ? '已关闭' : '草稿'}}
+            </text>
+            <text class="rev-action-btn round-action-edit" bindtap="startEditRound" data-id="{{item._id}}">编辑</text>
+            <text wx:if="{{item.status === 'draft'}}" class="rev-action-btn rev-action-confirm" bindtap="openRound" data-id="{{item._id}}">开启</text>
+            <text wx:if="{{item.status === 'open'}}" class="rev-action-btn rev-action-disable" bindtap="closeRound" data-id="{{item._id}}">关闭</text>
+          </view>
+        </block>
+      </view>
+    </view>
+  </view>
+
   </block>
 </view>

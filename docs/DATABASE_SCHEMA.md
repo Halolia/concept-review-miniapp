@@ -17,6 +17,7 @@
 | `organization` | string | 否 | 所属单位 |
 | `title` | string | 否 | 职称 |
 | `phone` | string | 否 | 联系电话 |
+| `bindingStatus` | string | 否 | 绑定状态：`pending` / `bound` |
 | `status` | string | 是 | 状态：`active` / `disabled` / `terminated` |
 | `createdAt` | Date | 是 | 创建时间 |
 | `updatedAt` | Date | 是 | 更新时间 |
@@ -25,6 +26,10 @@
 - `active` — 正常可用
 - `disabled` — 已停用（不可访问业务数据）
 - `terminated` — 已删除（逻辑删除）
+
+**bindingStatus 枚举**：
+- `pending` — 待绑定（openid 为空或占位）
+- `bound` — 已绑定真实 OPENID
 
 ---
 
@@ -93,6 +98,10 @@
 - `returned` — 已退回
 - `resubmitted` — 已重新提交
 - `locked` — 已锁定（批次关闭后）
+- `closed_unsubmitted` — 批次关闭且未提交
+- `removed` — 已移除（软删除，不计入汇总）
+
+**removed 附加字段**：`removedAt`, `removedBy`, `removedReason`
 
 ---
 
@@ -146,6 +155,11 @@
 - `returned` — 已退回
 - `resubmitted` — 已重新提交
 - `locked` — 已锁定（批次关闭后）
+- `invalidated` — 已作废（指派被管理员移除）
+
+**reviews 的 assignmentId 字段**：
+- 与实际 `review_assignments._id` 对应
+- review 文档 `_id` 等于 `assignmentId`（每个指派最多一条评审记录）
 
 ---
 

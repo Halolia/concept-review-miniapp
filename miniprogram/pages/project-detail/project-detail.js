@@ -1,4 +1,5 @@
-const { expertGetProjectDetail, expertListAssignments } = require('../../services/projectService');
+const { expertGetProjectDetail } = require('../../services/projectService');
+const { expertListAssignments } = require('../../services/assignmentService');
 const { isExpert } = require('../../services/authService');
 const { DEBUG_MODE } = require('../../utils/request');
 

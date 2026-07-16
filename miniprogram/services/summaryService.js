@@ -37,6 +37,14 @@ async function adminCreateReviewRound(round) {
 }
 
 /**
+ * 管理员：更新评审批次（支持修改 name/deadline）
+ */
+async function adminUpdateReviewRound(roundId, updates) {
+  const res = await call('adminUpdateReviewRound', { roundId, updates });
+  return res.data;
+}
+
+/**
  * 管理员：开启评审批次
  */
 async function adminOpenReviewRound(roundId) {
@@ -57,6 +65,7 @@ module.exports = {
   leaderGetSummary,
   adminListReviewRounds,
   adminCreateReviewRound,
+  adminUpdateReviewRound,
   adminOpenReviewRound,
   adminCloseReviewRound
 };
