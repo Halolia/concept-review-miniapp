@@ -22,7 +22,7 @@ const ALLOWED_ROLES = {
   adminReturnReview:           ['admin'],
   adminGetProjectResult:       ['admin', 'leader'],
   adminGetSummary:             ['admin'],
-  adminListReviewRounds:       ['admin'],
+  adminListReviewRounds:       ['admin', 'leader'],
   adminCreateReviewRound:      ['admin'],
   adminUpdateReviewRound:      ['admin'],
   adminOpenReviewRound:        ['admin'],

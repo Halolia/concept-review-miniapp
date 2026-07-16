@@ -31,8 +31,8 @@ async function expertListProjects() {
 /**
  * 专家获取单个项目详情（含指派信息）
  */
-async function expertGetProjectDetail(projectId) {
-  const res = await call('expertGetProjectDetail', { projectId });
+async function expertGetProjectDetail(assignmentId) {
+  const res = await call('expertGetProjectDetail', { assignmentId });
   return res.data;
 }
 
