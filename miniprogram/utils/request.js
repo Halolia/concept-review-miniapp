@@ -241,7 +241,8 @@ async function localFallback(action, data) {
       let rev = debugData.reviews.find(r =>
         r.sessionId === data.sessionId && r.projectId === data.projectId && r.reviewerId === reviewerId
       );
-      const rd = data.data || {};
+      const { sessionId, projectId, scores, comments, recommendedFunding, fundingComment } = data;
+      const rd = data;
       const funding = rd.recommendedFunding !== undefined && rd.recommendedFunding !== '' ? Number(rd.recommendedFunding) : null;
       const draft = {
         _id: rev ? rev._id : 'rev_' + Date.now(),
@@ -264,40 +265,67 @@ async function localFallback(action, data) {
     }
 
     case 'reviewerSubmitReview': {
-      const reviewerId = app.globalData.reviewerId || 'r1';
-      const rd2 = data.data || {};
-      const { scores, comments, recommendedFunding, fundingComment } = rd2;
-      if (!scores || !comments) return { ok: false, code: 'INVALID_PARAM', message: '评分数据不完整' };
-      const funding = Number(recommendedFunding);
-      if (isNaN(funding) || funding < 0) return { ok: false, code: 'INVALID_FUNDING', message: '经费不合法' };
-      if (funding === 0 && (!fundingComment || !fundingComment.trim())) return { ok: false, code: 'FUNDING_COMMENT', message: '经费为0需填写说明' };
-
-      let rev = debugData.reviews.find(r =>
-        r.sessionId === data.sessionId && r.projectId === data.projectId && r.reviewerId === reviewerId
-      );
-      const calc = calcTotal(scores);
-      const isResubmit = rev && ['submitted', 'resubmitted'].includes(rev.status);
-      const newRev = {
-        _id: rev ? rev._id : 'rev_' + Date.now(),
-        sessionId: data.sessionId, projectId: data.projectId, reviewerId,
-        expertName: app.globalData.userName || '张教授',
-        scores, totalScore: calc.totalScore, grade: calc.grade.label,
-        comments: comments.trim(), recommendedFunding: funding,
-        fundingComment: (fundingComment || '').trim(),
-        status: isResubmit ? 'resubmitted' : 'submitted',
-        version: isResubmit ? ((rev && rev.version) || 1) + 1 : 1,
-        submittedAt: Date.now(), updatedAt: Date.now(),
-        createdAt: rev ? rev.createdAt : Date.now()
-      };
-      if (rev) {
-        const i = debugData.reviews.indexOf(rev);
-        debugData.reviews[i] = newRev;
-      } else {
-        debugData.reviews.push(newRev);
-      }
-      wx.setStorageSync('cr_reviews_debug', debugData.reviews);
-      return { ok: true, data: newRev };
+    const reviewerId = app.globalData.reviewerId || 'r1';
+    const reviewerName = app.globalData.currentReviewerName || '专家';
+    // Accept flat parameters (same as what the page sends)
+    const { sessionId, projectId, scores, comments, recommendedFunding, fundingComment } = data;
+    
+    // Specific validation
+    if (!scores || typeof scores !== 'object' || Object.keys(scores).length < 15) {
+      return { ok: false, code: 'SCORES_REQUIRED', message: '未获取到完整评分数据' };
     }
+    if (!comments || !String(comments).trim()) {
+      return { ok: false, code: 'COMMENTS_REQUIRED', message: '评审专家意见和建议不能为空' };
+    }
+    
+    const funding = Number(recommendedFunding);
+    if (recommendedFunding === null || recommendedFunding === undefined || recommendedFunding === '') {
+      return { ok: false, code: 'FUNDING_REQUIRED', message: '建议经费不能为空' };
+    }
+    if (isNaN(funding) || funding < 0) {
+      return { ok: false, code: 'INVALID_FUNDING', message: '建议经费需为合法非负数字' };
+    }
+    if (funding === 0 && (!fundingComment || !String(fundingComment).trim())) {
+      return { ok: false, code: 'FUNDING_COMMENT_REQUIRED', message: '经费为0万元时请填写经费说明' };
+    }
+    
+    // Check all 15 scoring keys exist
+    const SCORING_KEYS = ['economicSignificance','marketForecast','marketCompetitiveness','technicalInnovation','technicalMaturity','industrializationRoute','implementationMethod','implementationSchedule','milestoneFeasibility','leaderCapability','teamCapability','fundingReasonableness','equipmentMaterialFeasibility','economicBenefitProbability','technicalRiskControl'];
+    for (const key of SCORING_KEYS) {
+      if (scores[key] === undefined || scores[key] === null || scores[key] === '') {
+        return { ok: false, code: 'SCORE_ITEM_MISSING', message: '缺少评分项：' + key };
+      }
+    }
+    
+    const calc = calcTotal(scores);
+    const reviewKey = (sessionId || 's1') + '_' + (projectId || 'p1') + '_' + reviewerId;
+    
+    const existingDone = debugData.reviews.find(r => r._id === reviewKey && ['submitted', 'locked'].includes(r.status));
+    const existing = debugData.reviews.find(r => r._id === reviewKey);
+    
+    const review = {
+      _id: reviewKey,
+      sessionId: sessionId || 's1', projectId: projectId || 'p1',
+      reviewerId, reviewerNameSnapshot: reviewerName,
+      scores, totalScore: calc.totalScore, grade: calc.grade.label,
+      comments: String(comments).trim(),
+      recommendedFunding: funding,
+      fundingComment: String(fundingComment || '').trim(),
+      status: 'submitted',
+      version: (existing ? existing.version || 1 : 0) + 1,
+      submittedAt: Date.now(), updatedAt: Date.now(),
+      createdAt: existing ? existing.createdAt : Date.now()
+    };
+    
+    if (existing) {
+      const i = debugData.reviews.indexOf(existing);
+      debugData.reviews[i] = review;
+    } else {
+      debugData.reviews.push(review);
+    }
+    wx.setStorageSync('cr_reviews_all', debugData.reviews);
+    return { ok: true, data: review };
+  }
 
     case 'expertSubmitReview': {
       const { sessionId, projectId, reviewerId, reviewerName, scores, comments, recommendedFunding, fundingComment } = data;
