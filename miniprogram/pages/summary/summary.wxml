@@ -6,6 +6,19 @@
   </view>
 
   <block wx:else>
+    <!-- 批次选择 -->
+    <view class="card" wx:if="{{rounds.length > 0}}">
+      <view class="section-title">查看批次</view>
+      <picker range="{{rounds}}" range-key="name" bindchange="onRoundChange">
+        <view class="picker-display">
+          <text>{{rounds[0].name || '选择批次'}}</text>
+          <text class="picker-arrow">▼</text>
+        </view>
+      </picker>
+      <view wx:if="{{summary.isClosed}}" class="tag tag-good" style="margin-top:12rpx">正式排名</view>
+      <view wx:else class="tag tag-pending" style="margin-top:12rpx">评审未结束</view>
+    </view>
+
     <!-- 总览 -->
     <view class="card overview">
       <view class="overview-title">评审概览</view>

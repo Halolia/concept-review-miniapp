@@ -5,28 +5,23 @@ const { DEBUG_MODE } = require('../../utils/request');
 
 Page({
   data: {
-    loading: true,
-    projectId: '',
-    projectName: '',
-    project: {},
-    currentRound: null,
-    assignmentStatus: 'assigned',
-    assignmentId: '',
-    returnReason: '',
-    canReview: false
+    loading: true, projectId: '', projectName: '', assignmentId: '',
+    project: {}, currentRound: null, assignmentStatus: 'assigned',
+    returnReason: '', canReview: false
   },
 
   onLoad(options) {
-    const projectId = options.projectId;
-    const projectName = decodeURIComponent(options.projectName || '');
-    this.setData({ projectId, projectName });
+    this.setData({
+      projectId: options.projectId || '',
+      projectName: decodeURIComponent(options.projectName || ''),
+      assignmentId: options.assignmentId || ''
+    });
   },
 
   async onShow() {
     if (!isExpert() && !DEBUG_MODE) {
       wx.showToast({ title: '无权限访问', icon: 'none' });
-      setTimeout(() => wx.navigateBack(), 1500);
-      return;
+      setTimeout(() => wx.navigateBack(), 1500); return;
     }
     await this.loadData();
   },
@@ -34,50 +29,36 @@ Page({
   async loadData() {
     this.setData({ loading: true });
     try {
-      // 并行获取项目详情和指派列表
-      const [detail, assignments] = await Promise.all([
-        expertGetProjectDetail(this.data.projectId),
-        expertListAssignments()
-      ]);
-
+      const detail = await expertGetProjectDetail(this.data.projectId);
       if (!detail) {
         wx.showToast({ title: '项目不存在', icon: 'none' });
-        setTimeout(() => wx.navigateBack(), 1500);
-        return;
+        setTimeout(() => wx.navigateBack(), 1500); return;
       }
 
       const project = detail.project || detail;
       const assignment = detail.assignment || {};
       const currentRound = detail.currentRound || null;
 
-      // 从指派列表获取最新状态
+      // 获取最新的指派信息（优先用 assignmentId）
       let assignmentStatus = assignment.status || 'assigned';
+      let assignmentId = this.data.assignmentId || assignment._id || '';
       let returnReason = '';
-      let myReview = null;
 
-      if (assignments && assignments.length) {
-        const myAsgn = assignments.find(a => a.projectId === this.data.projectId);
-        if (myAsgn) {
-          assignmentStatus = myAsgn.status;
-          if (myAsgn.review) {
-            myReview = myAsgn.review;
-            returnReason = myAsgn.review.returnReason || '';
-          }
-        }
+      const assignments = await expertListAssignments().catch(() => []);
+      const myAsgn = assignments.find(a =>
+        a._id === assignmentId || a.projectId === this.data.projectId
+      );
+      if (myAsgn) {
+        assignmentStatus = myAsgn.status;
+        assignmentId = myAsgn._id;
+        if (myAsgn.review) returnReason = myAsgn.review.returnReason || '';
       }
 
-      // 判断是否可操作
-      const canReview = !['locked'].includes(assignmentStatus) && currentRound && currentRound.status === 'open';
+      const canReview = !['locked', 'closed_unsubmitted', 'removed'].includes(assignmentStatus)
+        && currentRound && currentRound.status === 'open'
+        && project.status === 'active';
 
-      this.setData({
-        loading: false,
-        project,
-        currentRound,
-        assignmentStatus,
-        assignmentId: assignment._id || assignment.assignmentId || '',
-        returnReason,
-        canReview
-      });
+      this.setData({ loading: false, project, currentRound, assignmentStatus, assignmentId, returnReason, canReview });
     } catch (err) {
       this.setData({ loading: false });
       console.error('加载项目详情失败:', err);
@@ -86,7 +67,7 @@ Page({
 
   goReview() {
     const { projectId, projectName, assignmentId, assignmentStatus } = this.data;
-    const isReadonly = ['submitted', 'resubmitted', 'locked'].includes(assignmentStatus) && assignmentStatus !== 'returned';
+    const isReadonly = ['submitted', 'resubmitted', 'locked', 'closed_unsubmitted'].includes(assignmentStatus) && assignmentStatus !== 'returned';
     wx.navigateTo({
       url: `/pages/review/review?projectId=${projectId}&projectName=${encodeURIComponent(projectName)}&assignmentId=${assignmentId}&readonly=${isReadonly}`
     });

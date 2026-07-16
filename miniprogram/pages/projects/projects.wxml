@@ -17,7 +17,7 @@
   <!-- 项目列表 -->
   <block wx:elif="{{filteredProjects.length > 0}}">
     <view class="card project-card" wx:for="{{filteredProjects}}" wx:key="_id"
-          bindtap="goDetail" data-id="{{item._id}}" data-name="{{item.name}}">
+          bindtap="goDetail" data-id="{{item._id}}" data-name="{{item.name}}" data-assignment-id="{{item.assignmentId}}">
       <view class="pc-header">
         <text class="pc-name">{{item.name}}</text>
         <view class="tag {{item.reviewStatusClass}}">{{item.reviewStatusLabel || item.reviewStatus}}</view>
@@ -25,6 +25,7 @@
       <view class="pc-info">
         <text class="pc-institution" wx:if="{{item.institution}}">🏛 {{item.institution}}</text>
         <text class="pc-leader" wx:if="{{item.leader}}">👤 {{item.leader}}</text>
+        <text class="pc-round" wx:if="{{item.roundName && role==='expert'}}">📅 {{item.roundName}}</text>
       </view>
       <view class="pc-footer" wx:if="{{item.lastScore !== null}}">
         <text class="pc-score" wx:if="{{role==='expert'}}">得分：{{item.lastScore}}</text>

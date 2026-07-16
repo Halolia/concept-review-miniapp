@@ -4,18 +4,16 @@ const path = require('path');
 
 const tests = [
   'scoring.test.js',
-  // 后续测试文件添加在这里
-  // 'summary.test.js',
-  // 'review-state.test.js',
-  // 'permissions.test.js',
-  // 'init-data.test.js',
+  'request-error.test.js',
+  'summary.test.js',
+  'round.test.js',
 ];
 
 let totalPassed = 0;
 let totalFailed = 0;
 
 for (const testFile of tests) {
-  console.log(`\n━━━ ${testFile} ━━━`);
+  console.log(`\n\u2501\u2501\u2501 ${testFile} \u2501\u2501\u2501`);
   try {
     execSync(`node "${path.join(__dirname, testFile)}"`, {
       cwd: __dirname,
@@ -27,8 +25,8 @@ for (const testFile of tests) {
   }
 }
 
-console.log(`\n══════════════════`);
-console.log(`测试文件: ${totalPassed} 通过, ${totalFailed} 失败`);
-console.log(`══════════════════`);
+console.log(`\n\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550`);
+console.log(`\u6d4b\u8bd5\u6587\u4ef6: ${totalPassed} \u901a\u8fc7, ${totalFailed} \u5931\u8d25`);
+console.log(`\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550`);
 
 process.exit(totalFailed > 0 ? 1 : 0);

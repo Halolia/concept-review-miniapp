@@ -35,6 +35,16 @@ async function getCurrentUser() {
 }
 
 /**
+ * 获取当前 OPENID（无需绑定）
+ */
+async function getMyOpenid() {
+  const { call, DEBUG_MODE } = require('../utils/request');
+  if (DEBUG_MODE) return 'DEBUG_OPENID_' + (getApp().globalData.role === 'admin' ? 'admin' : getApp().globalData.currentReviewerId);
+  const res = await call('getMyOpenid', {}, { showLoading: false });
+  return res.data ? res.data.openid : null;
+}
+
+/**
  * 获取缓存的当前用户（不发起网络请求）
  */
 function getCurrentUserSync() {
@@ -86,6 +96,7 @@ function isLeader() {
 module.exports = {
   getCurrentUser,
   getCurrentUserSync,
+  getMyOpenid,
   hasRole,
   isAdmin,
   isExpert,

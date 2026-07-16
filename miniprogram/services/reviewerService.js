@@ -44,10 +44,19 @@ async function adminBindUserOpenid(userId, openid) {
   return res.data;
 }
 
+/**
+ * 管理员解绑用户OPENID
+ */
+async function adminUnbindUserOpenid(userId) {
+  const res = await call('adminUnbindUserOpenid', { userId });
+  return res.data;
+}
+
 module.exports = {
   adminListUsers,
   adminCreateOrBindUser,
   adminDisableUser,
   adminEnableUser,
-  adminBindUserOpenid
+  adminBindUserOpenid,
+  adminUnbindUserOpenid
 };

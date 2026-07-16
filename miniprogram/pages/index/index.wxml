@@ -129,5 +129,36 @@
         </view>
       </view>
     </block>
+
+    <!-- 领导仪表盘 -->
+    <block wx:if="{{role==='leader'}}">
+      <view class="card stats">
+        <view class="stats-title">评审概况</view>
+        <view class="stats-row">
+          <view class="stat-item">
+            <text class="stat-num">{{stats.totalProjects}}</text>
+            <text class="stat-label">参评项目</text>
+          </view>
+          <view class="stat-item">
+            <text class="stat-num done">{{stats.doneReviews}}</text>
+            <text class="stat-label">已完成</text>
+          </view>
+          <view class="stat-item">
+            <text class="stat-num pending">{{stats.pendingReviews}}</text>
+            <text class="stat-label">进行中</text>
+          </view>
+        </view>
+      </view>
+      <view class="card actions">
+        <view class="action-item" bindtap="goSummary">
+          <view class="action-icon">📊</view>
+          <view class="action-text">
+            <text class="action-title">结果汇总</text>
+            <text class="action-desc">查看所有项目得分排名</text>
+          </view>
+          <text class="action-arrow">→</text>
+        </view>
+      </view>
+    </block>
   </block>
 </view>

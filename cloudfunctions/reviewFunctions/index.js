@@ -1,5 +1,5 @@
 /**
- * 概念验证项目专家评审系统 - 业务云函数 v1.0.1
+ * 概念验证项目专家评审系统 - 业务云函数 v1.0.2
  *
  * 所有 action 必须执行：
  *   1. 获取 OPENID
@@ -24,42 +24,47 @@ exports.main = async (event, context) => {
   console.log(`[${action}] OPENID=${OPENID}`);
 
   try {
+    // 无需身份校验的公开 action
     if (action === 'getCurrentUser') return await handleGetCurrentUser();
+    if (action === 'getMyOpenid')   return await handleGetMyOpenid();
+
     const auth = await verifyAuth(db, OPENID, action);
     if (!auth.ok) return auth;
     const user = auth.user;
 
     switch (action) {
-      case 'adminListProjects':       return await adminListProjects(user);
-      case 'adminGetProject':         return await adminGetProject(user, data);
-      case 'adminCreateProject':      return await adminCreateProject(user, data);
-      case 'adminUpdateProject':      return await adminUpdateProject(user, data);
-      case 'adminArchiveProject':     return await adminArchiveProject(user, data);
-      case 'adminListUsers':          return await adminListUsers(user);
-      case 'adminCreateOrBindUser':   return await adminCreateOrBindUser(user, data);
-      case 'adminBindUserOpenid':     return await adminBindUserOpenid(user, data);
-      case 'adminDisableUser':        return await adminDisableUser(user, data);
-      case 'adminEnableUser':         return await adminEnableUser(user, data);
-      case 'adminListReviewRounds':   return await adminListReviewRounds(user);
-      case 'adminCreateReviewRound':  return await adminCreateReviewRound(user, data);
-      case 'adminUpdateReviewRound':  return await adminUpdateReviewRound(user, data);
-      case 'adminOpenReviewRound':    return await adminOpenReviewRound(user, data);
-      case 'adminCloseReviewRound':   return await adminCloseReviewRound(user, data);
-      case 'adminListAssignments':    return await adminListAssignments(user, data);
-      case 'adminAssignExpert':       return await adminAssignExpert(user, data);
-      case 'adminRemoveAssignment':   return await adminRemoveAssignment(user, data);
-      case 'adminReturnReview':       return await adminReturnReview(user, data);
-      case 'adminGetProjectResult':   return await adminGetProjectResult(user, data);
-      case 'adminGetSummary':         return await adminGetSummary(user, data);
-      case 'expertListProjects':      return await expertListProjects(user);
-      case 'expertGetProjectDetail':  return await expertGetProjectDetail(user, data);
-      case 'expertListAssignments':   return await expertListAssignments(user);
-      case 'expertGetMyReview':       return await expertGetMyReview(user, data);
-      case 'expertGetReviewDraft':    return await expertGetReviewDraft(user, data);
-      case 'expertSaveReviewDraft':   return await expertSaveReviewDraft(user, data);
-      case 'expertSubmitReview':      return await expertSubmitReview(user, data);
-      case 'leaderGetSummary':        return await leaderGetSummary(user, data);
-      case 'leaderGetProjectResult':  return await adminGetProjectResult(user, data);
+      case 'adminListProjects':        return await adminListProjects(user);
+      case 'adminGetProject':          return await adminGetProject(user, data);
+      case 'adminCreateProject':       return await adminCreateProject(user, data);
+      case 'adminUpdateProject':       return await adminUpdateProject(user, data);
+      case 'adminArchiveProject':      return await adminArchiveProject(user, data);
+      case 'adminListUsers':           return await adminListUsers(user);
+      case 'adminCreateOrBindUser':    return await adminCreateOrBindUser(user, data);
+      case 'adminBindUserOpenid':      return await adminBindUserOpenid(user, data);
+      case 'adminUnbindUserOpenid':    return await adminUnbindUserOpenid(user, data);
+      case 'adminDisableUser':         return await adminDisableUser(user, data);
+      case 'adminEnableUser':          return await adminEnableUser(user, data);
+      case 'adminListReviewRounds':    return await adminListReviewRounds(user);
+      case 'adminCreateReviewRound':   return await adminCreateReviewRound(user, data);
+      case 'adminUpdateReviewRound':   return await adminUpdateReviewRound(user, data);
+      case 'adminOpenReviewRound':     return await adminOpenReviewRound(user, data);
+      case 'adminCloseReviewRound':    return await adminCloseReviewRound(user, data);
+      case 'adminForceCloseReviewRound': return await adminForceCloseReviewRound(user, data);
+      case 'adminListAssignments':     return await adminListAssignments(user, data);
+      case 'adminAssignExpert':        return await adminAssignExpert(user, data);
+      case 'adminRemoveAssignment':    return await adminRemoveAssignment(user, data);
+      case 'adminReturnReview':        return await adminReturnReview(user, data);
+      case 'adminGetProjectResult':    return await adminGetProjectResult(user, data);
+      case 'adminGetSummary':          return await adminGetSummary(user, data);
+      case 'expertListProjects':       return await expertListProjects(user);
+      case 'expertGetProjectDetail':   return await expertGetProjectDetail(user, data);
+      case 'expertListAssignments':    return await expertListAssignments(user);
+      case 'expertGetMyReview':        return await expertGetMyReview(user, data);
+      case 'expertGetReviewDraft':     return await expertGetReviewDraft(user, data);
+      case 'expertSaveReviewDraft':    return await expertSaveReviewDraft(user, data);
+      case 'expertSubmitReview':       return await expertSubmitReview(user, data);
+      case 'leaderGetSummary':         return await leaderGetSummary(user, data);
+      case 'leaderGetProjectResult':   return await adminGetProjectResult(user, data);
       default:
         return { ok: false, code: 'UNKNOWN_ACTION', message: `未知操作: ${action}` };
     }
@@ -71,6 +76,7 @@ exports.main = async (event, context) => {
 
 // ═══════════════════ 用户身份 ═══════════════════
 
+/** 查询当前用户信息（需在 users 集合中存在） */
 async function handleGetCurrentUser() {
   const { OPENID } = cloud.getWXContext();
   if (!OPENID) return { ok: false, code: 'UNAUTHORIZED', message: '未获取到用户身份' };
@@ -79,6 +85,12 @@ async function handleGetCurrentUser() {
   const user = res.data[0];
   if (user.status !== 'active') return { ok: false, code: 'USER_DISABLED', message: '账号已被禁用' };
   return { ok: true, data: { _id: user._id, name: user.name, role: user.role, organization: user.organization || '', title: user.title || '', status: user.status } };
+}
+
+/** 获取当前调用者的 OPENID（无需在 users 集合中存在） */
+async function handleGetMyOpenid() {
+  const { OPENID } = cloud.getWXContext();
+  return { ok: true, data: { openid: OPENID || '' } };
 }
 
 // ═══════════════════ 项目管理 ═══════════════════
@@ -176,6 +188,17 @@ async function adminBindUserOpenid(user, { userId, openid }) {
   return { ok: true, data: { ...target.data, ...patch } };
 }
 
+/** 管理员解绑用户 OPENID —— 设为空并标记 pending，不删除任何指派 */
+async function adminUnbindUserOpenid(user, { userId }) {
+  if (!userId) return { ok: false, code: 'INVALID_PARAM', message: '缺少用户ID' };
+  const target = await db.collection('users').doc(userId).get();
+  if (!target.data) return { ok: false, code: 'NOT_FOUND', message: '用户不存在' };
+  const patch = { openid: '', bindingStatus: 'pending', updatedAt: db.serverDate() };
+  await db.collection('users').doc(userId).update({ data: patch });
+  await log(db, user, 'UNBIND_OPENID', 'user', userId, target.data, { ...target.data, ...patch });
+  return { ok: true, data: { ...target.data, ...patch } };
+}
+
 async function adminDisableUser(user, { userId, reason }) {
   if (!userId) return { ok: false, code: 'INVALID_PARAM', message: '缺少用户ID' };
   const before = await db.collection('users').doc(userId).get();
@@ -224,20 +247,76 @@ async function adminUpdateReviewRound(user, { roundId, updates }) {
   return { ok: true, data: { ...before.data, ...patch } };
 }
 
+/** 开启评审批次（仅允许从 draft 状态开启） */
 async function adminOpenReviewRound(user, { roundId }) {
   if (!roundId) return { ok: false, code: 'INVALID_PARAM', message: '缺少批次ID' };
   const before = await db.collection('review_rounds').doc(roundId).get();
   if (!before.data) return { ok: false, code: 'NOT_FOUND', message: '批次不存在' };
+
+  // 仅允许从 draft 状态开启
+  if (before.data.status !== 'draft') {
+    if (before.data.status === 'open') return { ok: false, code: 'ALREADY_OPEN', message: '批次已开启' };
+    return { ok: false, code: 'INVALID_STATUS', message: '只能从草稿状态开启批次' };
+  }
+
+  // 至少存在一个指派
+  const assignments = await db.collection('review_assignments').where({ roundId, status: _.neq('removed') }).get();
+  if (!assignments.data || assignments.data.length === 0) {
+    return { ok: false, code: 'NO_ASSIGNMENTS', message: '该批次没有指派专家，请先分配' };
+  }
+
   // 检查是否有其他 open 批次
   const otherOpen = await db.collection('review_rounds').where({ status: 'open', _id: _.neq(roundId) }).get();
   if (otherOpen.data && otherOpen.data.length > 0) return { ok: false, code: 'ANOTHER_OPEN', message: '已有其他开放批次，请先关闭' };
+
+  // 检查截止日期是否已过期（如果设置了的话）
+  if (before.data.deadline && Date.now() > new Date(before.data.deadline).getTime()) {
+    return { ok: false, code: 'DEADLINE_PAST', message: '截止日期已过，请先修改截止日期' };
+  }
+
   const patch = { status: 'open', startAt: db.serverDate(), updatedAt: db.serverDate() };
   await db.collection('review_rounds').doc(roundId).update({ data: patch });
   await log(db, user, 'OPEN_ROUND', 'review_round', roundId, before.data, { ...before.data, ...patch });
   return { ok: true, data: { ...before.data, ...patch } };
 }
 
+/** 关闭评审批次（要求所有指派已完成提交） */
 async function adminCloseReviewRound(user, { roundId }) {
+  if (!roundId) return { ok: false, code: 'INVALID_PARAM', message: '缺少批次ID' };
+  const before = await db.collection('review_rounds').doc(roundId).get();
+  if (!before.data) return { ok: false, code: 'NOT_FOUND', message: '批次不存在' };
+
+  // 检查所有指派是否已提交
+  const assignmentsRes = await db.collection('review_assignments').where({ roundId, status: _.neq('removed') }).get();
+  const assignments = assignmentsRes.data || [];
+  const total = assignments.length;
+  const completed = assignments.filter(a => ['submitted', 'resubmitted'].includes(a.status)).length;
+  const unfinished = total - completed;
+
+  if (unfinished > 0) {
+    return {
+      ok: false,
+      code: 'UNFINISHED_ASSIGNMENTS',
+      message: '存在未完成的评审',
+      data: { total, completed, unfinished }
+    };
+  }
+
+  const patch = { status: 'closed', closedAt: db.serverDate(), updatedAt: db.serverDate() };
+  await db.collection('review_rounds').doc(roundId).update({ data: patch });
+
+  // 已提交 → locked
+  await db.collection('reviews').where({ roundId, status: _.in(['submitted', 'resubmitted']) }).update({ data: { status: 'locked', updatedAt: db.serverDate() } });
+  await db.collection('review_assignments').where({ roundId, status: _.in(['submitted', 'resubmitted']) }).update({ data: { status: 'locked', updatedAt: db.serverDate() } });
+  // 未提交 → closed_unsubmitted（正常情况下此时不会再有未提交的，但保留兜底）
+  await db.collection('review_assignments').where({ roundId, status: _.nin(['locked', 'removed']) }).update({ data: { status: 'closed_unsubmitted', updatedAt: db.serverDate() } });
+
+  await log(db, user, 'CLOSE_ROUND', 'review_round', roundId, before.data, { ...before.data, ...patch });
+  return { ok: true, data: { ...before.data, ...patch } };
+}
+
+/** 强制关闭评审批次（跳过"全部提交"检查，管理员确认） */
+async function adminForceCloseReviewRound(user, { roundId, reason }) {
   if (!roundId) return { ok: false, code: 'INVALID_PARAM', message: '缺少批次ID' };
   const before = await db.collection('review_rounds').doc(roundId).get();
   if (!before.data) return { ok: false, code: 'NOT_FOUND', message: '批次不存在' };
@@ -245,12 +324,13 @@ async function adminCloseReviewRound(user, { roundId }) {
   const patch = { status: 'closed', closedAt: db.serverDate(), updatedAt: db.serverDate() };
   await db.collection('review_rounds').doc(roundId).update({ data: patch });
 
+  // 已提交/重新提交 → locked
   await db.collection('reviews').where({ roundId, status: _.in(['submitted', 'resubmitted']) }).update({ data: { status: 'locked', updatedAt: db.serverDate() } });
   await db.collection('review_assignments').where({ roundId, status: _.in(['submitted', 'resubmitted']) }).update({ data: { status: 'locked', updatedAt: db.serverDate() } });
-  // 未提交的标记为 closed_unsubmitted
+  // 未提交 → closed_unsubmitted
   await db.collection('review_assignments').where({ roundId, status: _.nin(['locked', 'removed']) }).update({ data: { status: 'closed_unsubmitted', updatedAt: db.serverDate() } });
 
-  await log(db, user, 'CLOSE_ROUND', 'review_round', roundId, before.data, { ...before.data, ...patch });
+  await log(db, user, 'FORCE_CLOSE_ROUND', 'review_round', roundId, before.data, { ...before.data, ...patch }, reason);
   return { ok: true, data: { ...before.data, ...patch } };
 }
 
@@ -265,6 +345,12 @@ async function adminListAssignments(user, { roundId }) {
 
 async function adminAssignExpert(user, { projectId, roundId, expertId }) {
   if (!projectId || !roundId || !expertId) return { ok: false, code: 'INVALID_PARAM', message: '缺少必要参数' };
+
+  // 校验项目状态
+  const project = await db.collection('projects').doc(projectId).get();
+  if (!project.data) return { ok: false, code: 'NOT_FOUND', message: '项目不存在' };
+  if (project.data.status !== 'active') return { ok: false, code: 'PROJECT_ARCHIVED', message: '项目已归档' };
+
   // 检查批次状态
   const round = await db.collection('review_rounds').doc(roundId).get();
   if (!round.data) return { ok: false, code: 'NOT_FOUND', message: '批次不存在' };
@@ -366,6 +452,8 @@ async function expertGetProjectDetail(user, { projectId }) {
   if (!assignments.data || assignments.data.length === 0) return { ok: false, code: 'NOT_ASSIGNED', message: '您未被分配到此项目' };
   const assignment = assignments.data[0];
   const project = await db.collection('projects').doc(projectId).get();
+  if (!project.data) return { ok: false, code: 'NOT_FOUND', message: '项目不存在' };
+  if (project.data.status !== 'active') return { ok: false, code: 'PROJECT_ARCHIVED', message: '项目已归档' };
   // 使用 assignment.roundId 查批次，保证数据一致
   const round = await db.collection('review_rounds').doc(assignment.roundId).get().catch(() => ({ data: null }));
   return { ok: true, data: { project: project.data, assignment, currentRound: round.data } };
@@ -410,12 +498,18 @@ async function expertGetReviewDraft(user, { assignmentId }) {
   }
 }
 
-// P1-7: 增加截止日期校验
+// P1-7: 增加截止日期校验 + 归档项目检查
 async function expertSaveReviewDraft(user, { reviewData }) {
   if (!reviewData || !reviewData.assignmentId) return { ok: false, code: 'INVALID_PARAM', message: '缺少指派ID' };
   const assignment = await db.collection('review_assignments').doc(reviewData.assignmentId).get();
   if (!assignment.data || assignment.data.expertId !== user._id) return { ok: false, code: 'NOT_ASSIGNED', message: '无权限' };
   if (!['assigned', 'draft', 'returned'].includes(assignment.data.status)) return { ok: false, code: 'STATUS_ERROR', message: '当前状态不可保存草稿' };
+
+  // 校验项目未被归档
+  const project = await db.collection('projects').doc(assignment.data.projectId).get();
+  if (!project.data) return { ok: false, code: 'NOT_FOUND', message: '项目不存在' };
+  if (project.data.status !== 'active') return { ok: false, code: 'PROJECT_ARCHIVED', message: '项目已归档' };
+
   const round = await db.collection('review_rounds').doc(assignment.data.roundId).get();
   if (!round.data || round.data.status !== 'open') return { ok: false, code: 'ROUND_CLOSED', message: '评审批次未开放' };
   if (round.data.deadline && Date.now() > new Date(round.data.deadline).getTime()) return { ok: false, code: 'DEADLINE_EXPIRED', message: '已超过截止日期' };
@@ -444,7 +538,7 @@ async function expertSaveReviewDraft(user, { reviewData }) {
   return { ok: true, data: doc };
 }
 
-// P0-7: 幂等提交，P1-7: 截止日期校验
+// P0-7: 幂等提交，P1-7: 截止日期校验 + 归档项目检查
 async function expertSubmitReview(user, { assignmentId, scores, comments, recommendedFunding, fundingComment }) {
   if (!assignmentId) return { ok: false, code: 'INVALID_PARAM', message: '缺少指派ID' };
   const assignment = await db.collection('review_assignments').doc(assignmentId).get();
@@ -452,6 +546,11 @@ async function expertSubmitReview(user, { assignmentId, scores, comments, recomm
   if (assignment.data.expertId !== user._id) return { ok: false, code: 'NOT_ASSIGNED', message: '您未被分配到此项目' };
   if (['locked', 'closed_unsubmitted'].includes(assignment.data.status)) return { ok: false, code: 'LOCKED', message: '无法提交' };
   if (['submitted', 'resubmitted'].includes(assignment.data.status) && assignment.data.status !== 'returned') return { ok: false, code: 'ALREADY_SUBMITTED', message: '您已提交评审，不能重复提交' };
+
+  // 校验项目未被归档
+  const project = await db.collection('projects').doc(assignment.data.projectId).get();
+  if (!project.data) return { ok: false, code: 'NOT_FOUND', message: '项目不存在' };
+  if (project.data.status !== 'active') return { ok: false, code: 'PROJECT_ARCHIVED', message: '项目已归档' };
 
   const round = await db.collection('review_rounds').doc(assignment.data.roundId).get();
   if (!round.data || round.data.status !== 'open') return { ok: false, code: 'ROUND_CLOSED', message: '评审批次未开放' };

@@ -1,34 +1,31 @@
-// app.js
-const { DEBUG_MODE } = require('./utils/request');
+// app.js v1.0.2 — 环境配置接入
+// 加载环境配置
+let envConfig;
+try { envConfig = require('./config/env'); } catch (e) { envConfig = require('./config/env.example'); }
 
 App({
   globalData: {
-    // 身份（正式模式由云函数返回，DEBUG 模式手动设置）
     currentUser: null,
-    role: 'expert',       // 'admin' | 'expert' | 'leader' | 'guest'
+    role: envConfig.debugMode ? 'expert' : 'guest',
     userName: '张教授',
     userStatus: 'active',
-
-    // DEBUG 模式兼容旧逻辑
     currentReviewerId: 'r1',
     currentReviewerName: '张教授'
   },
 
   onLaunch() {
-    // 始终初始化云开发（正式模式需要，DEBUG 模式无害）
     if (wx.cloud) {
       try {
-        wx.cloud.init({
-          env: 'your-env-id', // TODO: 替换为实际云环境 ID
-          traceUser: true
-        });
+        wx.cloud.init({ env: envConfig.cloudEnvId, traceUser: true });
       } catch (e) {
-        console.warn('云开发初始化失败（如未开通可忽略）:', e);
+        console.warn('云开发初始化失败:', e);
+        if (!envConfig.debugMode && envConfig.cloudEnvId) {
+          console.error('正式模式但云环境未配置！');
+        }
       }
     }
 
-    if (DEBUG_MODE) {
-      // 从本地读取角色设置（仅 DEBUG 模式）
+    if (envConfig.debugMode) {
       const role = wx.getStorageSync('cr_role');
       if (role) this.globalData.role = role;
       const name = wx.getStorageSync('cr_reviewer_name');
@@ -39,14 +36,10 @@ App({
   },
 
   switchRole(role) {
-    this.globalData.role = role;
-    wx.setStorageSync('cr_role', role);
+    this.globalData.role = role; wx.setStorageSync('cr_role', role);
   },
-
   setReviewer(id, name) {
-    this.globalData.currentReviewerId = id;
-    this.globalData.currentReviewerName = name;
-    wx.setStorageSync('cr_reviewer_id', id);
-    wx.setStorageSync('cr_reviewer_name', name);
+    this.globalData.currentReviewerId = id; this.globalData.currentReviewerName = name;
+    wx.setStorageSync('cr_reviewer_id', id); wx.setStorageSync('cr_reviewer_name', name);
   }
 });

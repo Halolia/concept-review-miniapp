@@ -13,6 +13,7 @@ const ALLOWED_ROLES = {
   adminListUsers:              ['admin'],
   adminCreateOrBindUser:       ['admin'],
   adminBindUserOpenid:         ['admin'],
+  adminUnbindUserOpenid:       ['admin'],
   adminDisableUser:            ['admin'],
   adminEnableUser:             ['admin'],
   adminListAssignments:        ['admin'],
@@ -26,6 +27,7 @@ const ALLOWED_ROLES = {
   adminUpdateReviewRound:      ['admin'],
   adminOpenReviewRound:        ['admin'],
   adminCloseReviewRound:       ['admin'],
+  adminForceCloseReviewRound:  ['admin'],
 
   // 专家专属
   expertListProjects:          ['expert'],
