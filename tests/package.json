@@ -3,6 +3,6 @@
   "version": "1.0.1",
   "private": true,
   "scripts": {
-    "test": "node tests/run-all.js"
+    "test": "node run-all.js"
   }
 }
