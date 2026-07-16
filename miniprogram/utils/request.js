@@ -299,6 +299,58 @@ async function localFallback(action, data) {
       return { ok: true, data: newRev };
     }
 
+    case 'expertSubmitReview': {
+      const { sessionId, projectId, reviewerId, reviewerName, scores, comments, recommendedFunding, fundingComment } = data;
+
+      // 1. 检查 scores 存在且包含 SCORING_ITEMS 全部 15 项
+      if (!scores || typeof scores !== 'object') {
+        return { ok: false, code: 'INVALID_PARAM', message: '评分数据不完整' };
+      }
+      const scoringKeys = Object.keys(SCORING_ITEMS);
+      for (const key of scoringKeys) {
+        if (scores[key] === undefined || scores[key] === null || scores[key] === '') {
+          return { ok: false, code: 'INVALID_PARAM', message: `缺少评分项: ${SCORING_ITEMS[key].label}` };
+        }
+      }
+
+      // 2. 检查 comments 非空
+      if (!comments || !comments.trim()) {
+        return { ok: false, code: 'INVALID_PARAM', message: '评审专家意见和建议不能为空' };
+      }
+
+      // 3. 经费校验
+      const funding = Number(recommendedFunding);
+      if (isNaN(funding) || funding < 0) return { ok: false, code: 'INVALID_FUNDING', message: '经费不合法' };
+      if (funding === 0 && (!fundingComment || !fundingComment.trim())) return { ok: false, code: 'FUNDING_COMMENT', message: '经费为0需填写说明' };
+
+      // 4. 查找已有评审（键: sessionId_projectId_reviewerId）
+      let rev = debugData.reviews.find(r =>
+        r.sessionId === sessionId && r.projectId === projectId && r.reviewerId === reviewerId
+      );
+      const calc = calcTotal(scores);
+      const isResubmit = rev && ['submitted', 'resubmitted'].includes(rev.status);
+      const newRev = {
+        _id: rev ? rev._id : 'rev_' + Date.now(),
+        sessionId, projectId, reviewerId,
+        expertName: reviewerName || app.globalData.userName || '张教授',
+        scores, totalScore: calc.totalScore, grade: calc.grade.label,
+        comments: comments.trim(), recommendedFunding: funding,
+        fundingComment: (fundingComment || '').trim(),
+        status: isResubmit ? 'resubmitted' : 'submitted',
+        version: isResubmit ? ((rev && rev.version) || 1) + 1 : 1,
+        submittedAt: Date.now(), updatedAt: Date.now(),
+        createdAt: rev ? rev.createdAt : Date.now()
+      };
+      if (rev) {
+        const i = debugData.reviews.indexOf(rev);
+        debugData.reviews[i] = newRev;
+      } else {
+        debugData.reviews.push(newRev);
+      }
+      wx.setStorageSync('cr_reviews_debug', debugData.reviews);
+      return { ok: true, data: newRev };
+    }
+
     case 'adminGetProjectResult': {
       let revs = debugData.reviews.filter(r => r.projectId === data.projectId);
       if (data.sessionId) revs = revs.filter(r => r.sessionId === data.sessionId);

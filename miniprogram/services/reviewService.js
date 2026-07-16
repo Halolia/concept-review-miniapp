@@ -1,43 +1,56 @@
 /**
- * 评审记录服务 — 路演现场评分
+ * 评审记录服务 v1.1
+ * 统一使用对象参数
  */
 
 const { call } = require('../utils/request');
 
 /**
- * 评审人：获取我对某项目的评审（若有）
- * @param {string} sessionId
- * @param {string} projectId
+ * 获取我的评审
  */
 async function getMyReview(sessionId, projectId) {
-  const res = await call('reviewerGetMyReview', { sessionId, projectId });
+  const res = await call('getMyReview', { sessionId, projectId });
   return res.data;
 }
 
 /**
- * 评审人：保存评审草稿
- * @param {string} sessionId
- * @param {string} projectId
- * @param {object} data { scores, comments, recommendedFunding, fundingComment }
+ * 保存草稿
  */
-async function saveDraft(sessionId, projectId, data) {
-  const res = await call('reviewerSaveDraft', { sessionId, projectId, data });
+async function saveDraft(payload) {
+  if (!payload || typeof payload !== 'object') throw new Error('参数格式错误');
+  const res = await call('saveDraft', { reviewData: payload });
   return res.data;
 }
 
 /**
- * 评审人：提交评审
- * @param {string} sessionId
- * @param {string} projectId
- * @param {object} data { scores, comments, recommendedFunding, fundingComment }
+ * 提交评审 —— 统一对象参数
+ * @param {object} payload
+ * @param {string} payload.sessionId
+ * @param {string} payload.projectId
+ * @param {string} payload.reviewerId
+ * @param {string} payload.reviewerName
+ * @param {object} payload.scores - 15项评分
+ * @param {string} payload.comments - 评审意见
+ * @param {string} payload.recommendedFunding - 建议经费
+ * @param {string} payload.fundingComment - 经费说明
  */
-async function submitReview(sessionId, projectId, data) {
-  const res = await call('reviewerSubmitReview', { sessionId, projectId, data });
+async function submitReview(payload) {
+  if (!payload || typeof payload !== 'object') throw new Error('提交参数格式错误');
+
+  const {
+    sessionId, projectId, reviewerId, reviewerName,
+    scores, comments, recommendedFunding, fundingComment
+  } = payload;
+
+  const res = await call('expertSubmitReview', {
+    sessionId, projectId, reviewerId, reviewerName,
+    scores, comments, recommendedFunding, fundingComment
+  });
   return res.data;
 }
 
 /**
- * 管理员：获取项目的评审结果
+ * 管理员获取项目评审结果
  */
 async function adminGetProjectResult(sessionId, projectId) {
   const res = await call('adminGetProjectResult', { sessionId, projectId });
@@ -45,17 +58,11 @@ async function adminGetProjectResult(sessionId, projectId) {
 }
 
 /**
- * 管理员：退回评审
+ * 管理员退回评审
  */
 async function adminReturnReview(reviewId, reason) {
   const res = await call('adminReturnReview', { reviewId, reason });
   return res.data;
 }
 
-module.exports = {
-  getMyReview,
-  saveDraft,
-  submitReview,
-  adminGetProjectResult,
-  adminReturnReview
-};
+module.exports = { getMyReview, saveDraft, submitReview, adminGetProjectResult, adminReturnReview };
