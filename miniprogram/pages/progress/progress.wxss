@@ -1,0 +1,97 @@
+.container { padding-bottom: 40rpx; }
+
+.banner {
+  background: linear-gradient(135deg, #1a6fb5 0%, #2196F3 100%);
+  padding: 40rpx;
+  color: #fff;
+}
+.banner-title { font-size: 36rpx; font-weight: 700; }
+.banner-sub { font-size: 24rpx; opacity: 0.85; margin-top: 8rpx; }
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16rpx;
+}
+.section-title { font-size: 26rpx; color: var(--text-secondary); }
+
+/* 筛选标签 */
+.filter-tabs { display: flex; gap: 8rpx; }
+.filter-tab {
+  font-size: 22rpx;
+  padding: 4rpx 16rpx;
+  border-radius: 4rpx;
+  color: var(--text-secondary);
+  background: var(--bg);
+}
+.filter-tab.active {
+  color: #fff;
+  background: var(--primary);
+}
+
+/* 进度表格 */
+.progress-table { }
+.progress-row {
+  display: flex;
+  align-items: center;
+  padding: 16rpx 0;
+  border-bottom: 1rpx solid var(--border);
+}
+.progress-row:last-child { border-bottom: none; }
+.progress-row-header {
+  background: var(--bg);
+  padding: 12rpx 0;
+  border-radius: 6rpx;
+  font-size: 24rpx;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+.progress-col-name {
+  flex: 1;
+  font-size: 26rpx;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+.progress-col-count { width: 100rpx; text-align: center; font-size: 26rpx; font-weight: 500; }
+.progress-col-bar { width: 140rpx; }
+
+/* 迷你进度条 */
+.mini-bar {
+  height: 12rpx;
+  background: #f0f0f0;
+  border-radius: 6rpx;
+  overflow: hidden;
+}
+.mini-bar-fill {
+  height: 100%;
+  border-radius: 6rpx;
+  transition: width 0.3s ease;
+  min-width: 4rpx;
+}
+.mini-bar-fill.done { background: #07c160; }
+.mini-bar-fill.pending { background: #ff976a; }
+
+/* 选框复用 admin 中的部分样式 */
+.round-radio-list { display: flex; flex-direction: column; gap: 12rpx; }
+.round-radio-item {
+  display: flex; align-items: center;
+  padding: 14rpx 16rpx; border-radius: 8rpx;
+  background: var(--bg); border: 2rpx solid transparent;
+}
+.round-radio-item.round-radio-active { border-color: var(--primary); background: var(--primary-light); }
+.round-radio-dot {
+  width: 32rpx; height: 32rpx; border-radius: 50%;
+  border: 3rpx solid var(--border); margin-right: 16rpx; flex-shrink: 0;
+}
+.round-radio-dot-checked { border-color: var(--primary); background: var(--primary); box-shadow: inset 0 0 0 4rpx #fff; }
+.round-radio-label { flex: 1; font-size: 26rpx; }
+.round-radio-status { font-size: 20rpx; padding: 2rpx 10rpx; border-radius: 4rpx; flex-shrink: 0; }
+
+.status-open { background: #e8f8ee; color: #07c160; }
+.status-closed { background: #f5f5f5; color: #999; }
+.status-draft { background: #fff3e0; color: #ff976a; }
+
+.empty-hint { text-align: center; padding: 40rpx; color: var(--text-secondary); font-size: 26rpx; }

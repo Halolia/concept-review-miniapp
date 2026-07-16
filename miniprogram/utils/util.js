@@ -1,17 +1,6 @@
-const { SCORING_DIMENSIONS, getGrade } = require('./constants');
-
 /**
- * 计算总分和等级
+ * 通用工具函数
  */
-function calcScore(scores) {
-  let total = 0;
-  SCORING_DIMENSIONS.forEach(dim => {
-    dim.items.forEach(item => {
-      total += (scores && scores[item.id]) || 0;
-    });
-  });
-  return { total, grade: getGrade(total) };
-}
 
 /**
  * 生成唯一 ID
@@ -26,7 +15,7 @@ function uid() {
 function fmtDate(ts) {
   const d = new Date(ts);
   const pad = n => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-module.exports = { calcScore, uid, fmtDate };
+module.exports = { uid, fmtDate };

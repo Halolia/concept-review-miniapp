@@ -1,4 +1,4 @@
-<!-- 评审打分页 -->
+<!-- 评审打分页 — 路演现场评分 -->
 <view class="container">
 
   <!-- 项目信息头部 -->
@@ -17,15 +17,15 @@
     </view>
   </view>
 
-  <!-- 只读提示 -->
-  <view wx:if="{{isReadonly && !isReturned}}" class="readonly-banner">
-    🔒 评审已提交，当前为只读模式。如需修改请联系管理员退回。
+  <!-- 状态提示 -->
+  <view wx:if="{{reviewStatus === 'locked'}}" class="status-banner status-banner-locked">
+    🔒 评审已锁定，当前为只读模式
   </view>
-
-  <!-- 退回提示 -->
-  <view wx:if="{{isReturned}}" class="returned-banner">
-    ↩️ 评审已被退回
-    <text wx:if="{{returnReason}}" class="returned-reason">原因：{{returnReason}}</text>
+  <view wx:elif="{{reviewStatus === 'submitted'}}" class="status-banner status-banner-submitted">
+    ✅ 已提交 (会话开放期间可修改)
+  </view>
+  <view wx:elif="{{reviewStatus === 'draft'}}" class="status-banner status-banner-draft">
+    📝 草稿模式
   </view>
 
   <!-- 六个评分维度 -->
@@ -42,22 +42,19 @@
       </view>
       <view class="item-score-input">
         <view class="stepper">
-          <view class="stepper-btn {{sub.currentScore===0 || (isReadonly && !isReturned) || reviewStatus==='locked' ?'disabled':''}}"
+          <view class="stepper-btn {{reviewStatus==='locked'?'disabled':''}}"
                 bindtap="decrease" data-key="{{sub.id}}" data-max="{{sub.maxScore}}">−</view>
           <input class="stepper-value" type="number"
-                 value="{{sub.currentScore}}"
-                 min="0" max="{{sub.maxScore}}"
+                 value="{{sub.currentScore}}" min="0" max="{{sub.maxScore}}"
                  data-key="{{sub.id}}"
-                 bindinput="onManualInput"
-                 bindblur="onBlurCheck"
+                 bindinput="onManualInput" bindblur="onBlurCheck"
                  placeholder="0"
-                 disabled="{{(isReadonly && !isReturned) || reviewStatus==='locked'}}"/>
-          <view class="stepper-btn {{(isReadonly && !isReturned) || reviewStatus==='locked'?'disabled':''}}"
+                 disabled="{{reviewStatus==='locked'}}"/>
+          <view class="stepper-btn {{reviewStatus==='locked'?'disabled':''}}"
                 bindtap="increase" data-key="{{sub.id}}" data-max="{{sub.maxScore}}">+</view>
         </view>
         <text class="item-max-hint">/ {{sub.maxScore}}</text>
       </view>
-      <!-- 进度条：使用预计算字段 -->
       <view class="score-bar-mini">
         <view class="score-bar-mini-fill" style="width:{{sub.progressPercent}}%; background:{{sub.progressColor}}"></view>
       </view>
@@ -71,7 +68,7 @@
            placeholder="请输入建议经费额度"
            value="{{recommendedFunding}}"
            bindinput="onFundingInput"
-           disabled="{{(isReadonly && !isReturned) || reviewStatus==='locked'}}"/>
+           disabled="{{reviewStatus==='locked'}}"/>
   </view>
 
   <!-- 经费说明 -->
@@ -81,47 +78,46 @@
               placeholder="请说明经费建议的理由…"
               value="{{fundingComment}}"
               bindinput="onFundingCommentInput"
-              auto-height
-              maxlength="1000"
-              disabled="{{(isReadonly && !isReturned) || reviewStatus==='locked'}}"/>
+              auto-height maxlength="1000"
+              disabled="{{reviewStatus==='locked'}}"/>
   </view>
 
   <!-- 评审意见 -->
   <view class="card comment-section">
     <view class="section-title">评审意见和建议</view>
     <textarea class="comment-input"
-              placeholder="请输入评审意见、建议经费额度等…"
+              placeholder="请输入评审意见、建议等…"
               value="{{comments}}"
               bindinput="onCommentInput"
-              auto-height
-              maxlength="2000"
-              disabled="{{(isReadonly && !isReturned) || reviewStatus==='locked'}}"/>
+              auto-height maxlength="2000"
+              disabled="{{reviewStatus==='locked'}}"/>
   </view>
 
-  <!-- 评审人姓名 -->
+  <!-- 签名 -->
   <view class="card sign-section">
     <view class="section-title">评审专家</view>
     <input class="name-input"
            placeholder="{{reviewerName || '当前登录用户'}}"
            value="{{reviewerName}}"
-           bindinput="onNameInput"
            disabled="{{true}}"/>
-    <text class="sign-hint" wx:if="{{!reviewerName}}">姓名由系统根据登录账号自动获取</text>
+    <view class="confirm-row" wx:if="{{reviewStatus !== 'locked'}}">
+      <label class="confirm-label">
+        <checkbox checked="{{confirmed}}" bindchange="onConfirmChange"/>
+        <text>本人确认以上评分真实有效</text>
+      </label>
+    </view>
   </view>
 
   <!-- 操作按钮 -->
-  <view class="submit-area" wx:if="{{!isReadonly || isReturned}}">
-    <button wx:if="{{reviewStatus !== 'locked' && reviewStatus !== 'submitted' && reviewStatus !== 'resubmitted'}}"
-            class="btn btn-outline btn-block submit-btn"
-            bindtap="saveDraft"
-            disabled="{{saving}}">
+  <view class="submit-area" wx:if="{{reviewStatus !== 'locked'}}">
+    <button class="btn btn-outline btn-block submit-btn"
+            bindtap="saveDraft" disabled="{{saving}}">
       {{saving ? '保存中…' : '保存草稿'}}
     </button>
     <button class="btn btn-primary btn-block submit-btn"
-            bindtap="submitReview"
-            disabled="{{submitting || reviewStatus === 'locked'}}"
-            style="margin-top:16rpx; background:{{isReturned ? '#52c41a' : '#1a6fb5'}}">
-      {{submitting ? '提交中…' : (isReturned ? '重新提交' : '提交评审')}}
+            bindtap="submitReview" disabled="{{submitting}}"
+            style="margin-top:16rpx">
+      {{submitting ? '提交中…' : '提交评审'}}
     </button>
   </view>
 

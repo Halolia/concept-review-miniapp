@@ -1,27 +1,34 @@
-const { isAdmin, isLeader } = require('../../services/authService');
+/**
+ * 评审结果详情 — 路演现场评分
+ * 管理员查看单项目各评委的评分详情
+ * 支持 per-reviewer detail toggle
+ */
+const { isAdmin } = require('../../services/authService');
 const { adminGetProjectResult, adminReturnReview } = require('../../services/reviewService');
-const { adminGetSummary } = require('../../services/summaryService');
 const { SCORING_DIMENSIONS, getGrade } = require('../../utils/scoring');
 const { DEBUG_MODE } = require('../../utils/request');
 
 Page({
   data: {
-    projectId: '', projectName: '', roundId: '',
+    projectId: '', projectName: '', sessionId: '',
     reviews: [], avgScore: '-', avgGrade: { label: '-', color: '#999' },
     median: '-', maxScore: '-', minScore: '-', range: '-', avgFunding: '-',
-    reviewCount: 0, totalAssignments: 0, loading: true
+    reviewCount: 0, totalAssignments: 0, loading: true,
+
+    // Per-reviewer toggle
+    expandedReviewers: {}  // { reviewerId: true }
   },
 
   onLoad(options) {
     this.setData({
-      projectId: options.projectId,
+      projectId: options.projectId || '',
       projectName: decodeURIComponent(options.projectName || ''),
-      roundId: options.roundId || ''
+      sessionId: options.sessionId || ''
     });
   },
 
   async onShow() {
-    if (!isAdmin() && !isLeader() && !DEBUG_MODE) {
+    if (!isAdmin() && !DEBUG_MODE) {
       wx.showToast({ title: '无权限访问', icon: 'none' });
       setTimeout(() => wx.navigateBack(), 1500); return;
     }
@@ -31,17 +38,14 @@ Page({
   async loadData() {
     this.setData({ loading: true });
     try {
-      const reviews = await adminGetProjectResult(this.data.projectId, this.data.roundId);
-      let summaryRes;
-      try { summaryRes = await adminGetSummary(this.data.roundId); } catch (e) { summaryRes = { rankings: [] }; }
-      const ranking = (summaryRes.rankings || []).find(r => r.projectId === this.data.projectId);
-
+      const reviews = await adminGetProjectResult(this.data.sessionId, this.data.projectId);
       const enriched = (reviews || []).map(r => {
         const grade = getGrade(r.totalScore);
         return {
           ...r,
           timeStr: r.submittedAt ? new Date(r.submittedAt).toLocaleString('zh-CN') : '',
-          gradeColor: grade ? grade.color : '#999', versionLabel: r.version > 1 ? `v${r.version}` : '',
+          gradeColor: grade ? grade.color : '#999',
+          versionLabel: r.version > 1 ? `v${r.version}` : '',
           dimDetail: SCORING_DIMENSIONS.map(dim => ({
             dimId: dim.id, dimTitle: dim.title,
             items: dim.items.map(item => ({
@@ -52,32 +56,68 @@ Page({
         };
       });
 
+      // 计算统计
+      const scores = enriched.filter(r =>
+        ['submitted', 'resubmitted', 'locked'].includes(r.status)
+      ).map(r => r.totalScore);
+      let stats = { avgScore: '-', avgGrade: { label: '-', color: '#999' }, median: '-', maxScore: '-', minScore: '-', range: '-' };
+      if (scores.length > 0) {
+        const sorted = [...scores].sort((a, b) => a - b);
+        const avg = scores.reduce((a, b) => a + b, 0) / scores.length;
+        const median = sorted.length % 2 === 0
+          ? (sorted[sorted.length / 2 - 1] + sorted[sorted.length / 2]) / 2
+          : sorted[Math.floor(sorted.length / 2)];
+        const grade = getGrade(avg);
+        stats = {
+          avgScore: avg.toFixed(1),
+          avgGrade: grade,
+          median: median.toFixed(1),
+          maxScore: sorted[sorted.length - 1],
+          minScore: sorted[0],
+          range: (sorted[sorted.length - 1] - sorted[0]).toFixed(1)
+        };
+      }
+      const fundings = enriched
+        .filter(r => ['submitted', 'resubmitted', 'locked'].includes(r.status))
+        .map(r => r.recommendedFunding).filter(f => f !== null && f !== undefined);
+      const avgFunding = fundings.length > 0
+        ? (fundings.reduce((a, b) => a + b, 0) / fundings.length).toFixed(2)
+        : '-';
+
       this.setData({
         loading: false, reviews: enriched,
-        avgScore: ranking ? ranking.avgScore : '-',
-        avgGrade: ranking ? getGrade(parseFloat(ranking.avgScore) || 0) : { label: '-', color: '#999' },
-        median: ranking ? ranking.median : '-', maxScore: ranking ? ranking.maxScore : '-',
-        minScore: ranking ? ranking.minScore : '-', range: ranking ? ranking.range : '-',
-        avgFunding: ranking ? ranking.avgFunding : '-',
-        reviewCount: ranking ? ranking.reviewCount : enriched.length,
-        totalAssignments: ranking ? ranking.totalAssignments : 0,
-        reviewStatus: ranking ? ranking.reviewStatus : '未开始'
+        ...stats, avgFunding,
+        reviewCount: scores.length,
+        totalAssignments: enriched.length
       });
-    } catch (e) { this.setData({ loading: false }); }
+    } catch (e) {
+      this.setData({ loading: false });
+    }
   },
 
-  // ── 管理员退回评审 ──
+  /** 切换单个评委评审详情展开/收起 */
+  toggleReviewerDetail(e) {
+    const { id } = e.currentTarget.dataset;
+    const expanded = { ...this.data.expandedReviewers };
+    if (expanded[id]) {
+      delete expanded[id];
+    } else {
+      expanded[id] = true;
+    }
+    this.setData({ expandedReviewers: expanded });
+  },
+
+  /** 退回评审 */
   returnReview(e) {
     const { id, name } = e.currentTarget.dataset;
     wx.showModal({
       title: `退回 ${name || ''} 的评审`,
-      content: '退回后专家可以修改并重新提交。请填写退回原因：',
+      content: '退回后评委可以修改并重新提交。请填写退回原因：',
       editable: true,
       placeholderText: '请输入退回原因',
       success: async (res) => {
         if (!res.confirm || !res.content) {
-          wx.showToast({ title: '请填写退回原因', icon: 'none' });
-          return;
+          wx.showToast({ title: '请填写退回原因', icon: 'none' }); return;
         }
         try {
           await adminReturnReview(id, res.content);

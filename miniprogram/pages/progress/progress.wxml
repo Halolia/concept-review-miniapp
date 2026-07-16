@@ -1,0 +1,104 @@
+<!-- 进度看板 — 路演现场评分 -->
+<view class="container">
+  <view wx:if="{{loading}}" class="empty-state">
+    <text style="font-size:80rpx">⏳</text>
+    <text>加载中…</text>
+  </view>
+
+  <block wx:else>
+    <view class="banner">
+      <view class="banner-title">进度看板</view>
+      <view class="banner-sub" wx:if="{{selectedSession}}">{{selectedSession.name}}</view>
+    </view>
+
+    <!-- 场次选择 -->
+    <view class="card" wx:if="{{sessions.length > 0}}">
+      <view class="section-title">选择场次</view>
+      <view class="round-radio-list">
+        <view class="round-radio-item {{selectedSessionId===item._id?'round-radio-active':''}}"
+              wx:for="{{sessions}}" wx:key="_id" bindtap="selectSession" data-id="{{item._id}}">
+          <view class="round-radio-dot {{selectedSessionId===item._id?'round-radio-dot-checked':''}}"></view>
+          <text class="round-radio-label">{{item.name}}</text>
+          <text class="round-radio-status status-{{item.status}}">
+            {{item.status === 'open' ? '进行中' : item.status === 'closed' ? '已结束' : '草稿'}}
+          </text>
+        </view>
+      </view>
+    </view>
+
+    <block wx:if="{{selectedSessionId}}">
+      <!-- === 项目维度 === -->
+      <view class="card">
+        <view class="section-header">
+          <text class="section-title">📊 项目维度</text>
+          <view class="filter-tabs">
+            <text class="filter-tab {{projectFilter==='all'?'active':''}}" bindtap="setProjectFilter" data-filter="all">全部</text>
+            <text class="filter-tab {{projectFilter==='done'?'active':''}}" bindtap="setProjectFilter" data-filter="done">已完成</text>
+            <text class="filter-tab {{projectFilter==='pending'?'active':''}}" bindtap="setProjectFilter" data-filter="pending">进行中</text>
+          </view>
+        </view>
+
+        <view wx:if="{{projectProgress.length > 0}}">
+          <view class="progress-table">
+            <view class="progress-row progress-row-header">
+              <text class="progress-col-name">项目名称</text>
+              <text class="progress-col-count">提交/总数</text>
+              <text class="progress-col-bar">进度</text>
+            </view>
+            <view class="progress-row" wx:for="{{projectProgress}}" wx:key="projectId"
+                  wx:if="{{projectFilter==='all' || (projectFilter==='done' && item.submitted >= item.total) || (projectFilter==='pending' && item.submitted < item.total)}}"
+                  bindtap="goResult" data-id="{{item.projectId}}" data-name="{{item.projectName}}">
+              <text class="progress-col-name">{{item.projectName}}</text>
+              <text class="progress-col-count">{{item.submitted || 0}}/{{item.total || 0}}</text>
+              <view class="progress-col-bar">
+                <view class="mini-bar">
+                  <view class="mini-bar-fill {{item.submitted >= item.total ? 'done' : 'pending'}}"
+                        style="width:{{item.total > 0 ? (item.submitted / item.total * 100) : 0}}%"></view>
+                </view>
+              </view>
+            </view>
+          </view>
+        </view>
+        <view wx:else class="empty-hint">暂无项目数据</view>
+      </view>
+
+      <!-- === 评委维度 === -->
+      <view class="card">
+        <view class="section-header">
+          <text class="section-title">👤 评委维度</text>
+          <view class="filter-tabs">
+            <text class="filter-tab {{reviewerFilter==='all'?'active':''}}" bindtap="setReviewerFilter" data-filter="all">全部</text>
+            <text class="filter-tab {{reviewerFilter==='done'?'active':''}}" bindtap="setReviewerFilter" data-filter="done">已完成</text>
+            <text class="filter-tab {{reviewerFilter==='pending'?'active':''}}" bindtap="setReviewerFilter" data-filter="pending">进行中</text>
+          </view>
+        </view>
+
+        <view wx:if="{{reviewerProgress.length > 0}}">
+          <view class="progress-table">
+            <view class="progress-row progress-row-header">
+              <text class="progress-col-name">评委姓名</text>
+              <text class="progress-col-count">已评/总数</text>
+              <text class="progress-col-bar">进度</text>
+            </view>
+            <view class="progress-row" wx:for="{{reviewerProgress}}" wx:key="reviewerId"
+                  wx:if="{{reviewerFilter==='all' || (reviewerFilter==='done' && item.scored >= item.total) || (reviewerFilter==='pending' && item.scored < item.total)}}">
+              <text class="progress-col-name">{{item.reviewerName}}</text>
+              <text class="progress-col-count">{{item.scored || 0}}/{{item.total || 0}}</text>
+              <view class="progress-col-bar">
+                <view class="mini-bar">
+                  <view class="mini-bar-fill {{item.scored >= item.total ? 'done' : 'pending'}}"
+                        style="width:{{item.total > 0 ? (item.scored / item.total * 100) : 0}}%"></view>
+                </view>
+              </view>
+            </view>
+          </view>
+        </view>
+        <view wx:else class="empty-hint">暂无评委数据</view>
+      </view>
+    </block>
+
+    <view wx:else class="card">
+      <text style="color:var(--text-secondary);font-size:24rpx">请选择评审场次查看进度</text>
+    </view>
+  </block>
+</view>

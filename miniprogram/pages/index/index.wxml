@@ -1,16 +1,9 @@
-<!-- 首页 - 仪表盘 -->
+<!-- 首页 - 路演现场评分 -->
 <view class="container">
   <!-- 顶部横幅 -->
   <view class="banner">
-    <view class="banner-title">概念验证项目评审</view>
-    <view class="banner-sub">专家评审意见管理系统</view>
-  </view>
-
-  <!-- 未绑定提示 -->
-  <view wx:if="{{role==='guest' && !loading}}" class="card guest-notice">
-    <text style="font-size:60rpx">🔒</text>
-    <text class="guest-text">账号待管理员开通</text>
-    <text class="guest-sub">请联系系统管理员将您的微信账号绑定为评审专家</text>
+    <view class="banner-title">路演现场评分</view>
+    <view class="banner-sub">扫码绑定 · 即时打分</view>
   </view>
 
   <!-- 加载中 -->
@@ -19,146 +12,98 @@
     <text>加载中…</text>
   </view>
 
-  <block wx:elif="{{role!=='guest'}}">
-    <!-- 欢迎信息 -->
+  <!-- 未绑定提示 -->
+  <view wx:elif="{{role==='guest'}}" class="card guest-notice">
+    <text style="font-size:60rpx;text-align:center;display:block">📱</text>
+    <text class="guest-text">请扫描路演现场二维码</text>
+    <text class="guest-sub">扫描二维码后自动识别您的评审身份，即可开始评分</text>
+    <button class="btn btn-primary btn-block" style="margin:30rpx 0 0"
+            bindscancode="onScanCode" open-type="scanCode">扫码绑定</button>
+  </view>
+
+  <!-- === 评审人视图 === -->
+  <block wx:elif="{{role==='reviewer'}}">
+    <!-- 评审人信息条 -->
+    <view class="card reviewer-bar">
+      <view class="reviewer-avatar">{{userName[0] || '👤'}}</view>
+      <view class="reviewer-info">
+        <text class="reviewer-name">{{userName}}</text>
+        <text class="reviewer-session">{{sessionName || '路演评审'}}</text>
+      </view>
+      <view class="progress-ring">
+        <text class="progress-text">{{progress.done}}/{{progress.total}}</text>
+        <text class="progress-label">已完成</text>
+      </view>
+    </view>
+
+    <!-- 项目列表 -->
+    <view class="card" wx:if="{{projects.length > 0}}">
+      <view class="section-title">评审项目（{{projects.length}}）</view>
+      <view class="proj-item" wx:for="{{projects}}" wx:key="_id"
+            bindtap="goReview" data-id="{{item._id}}" data-name="{{item.name}}">
+        <view class="pj-left">
+          <text class="pj-index">{{index + 1}}</text>
+        </view>
+        <view class="pj-info">
+          <text class="pj-name">{{item.name}}</text>
+          <text class="pj-institution" wx:if="{{item.institution}}">{{item.institution}}</text>
+        </view>
+        <view class="pj-right">
+          <view class="tag {{item.statusClass}}">{{item.statusLabel}}</view>
+          <text class="action-arrow">→</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 全部完成提示 -->
+    <view class="card" wx:if="{{progress.done === progress.total && progress.total > 0}}" style="background:#e8f8ee">
+      <view style="text-align:center">
+        <text style="font-size:48rpx">🎉</text>
+        <text style="display:block;font-size:28rpx;color:#07c160;margin-top:12rpx">所有项目已评分完毕</text>
+      </view>
+    </view>
+  </block>
+
+  <!-- === 管理员视图 === -->
+  <block wx:elif="{{role==='admin'}}">
     <view class="card welcome-card">
-      <view class="welcome-avatar">{{role === 'admin' ? '⚙️' : '🔍'}}</view>
+      <view class="welcome-avatar">⚙️</view>
       <view class="welcome-info">
         <text class="welcome-name">{{userName}}</text>
-        <text class="welcome-role">{{role === 'admin' ? '管理员' : '评审专家'}}</text>
+        <text class="welcome-role">管理员</text>
       </view>
     </view>
 
-    <!-- DEBUG 角色切换 -->
-    <view wx:if="{{showRoleSwitch}}" class="card role-switch">
-      <view class="role-label">⚠️ DEBUG 模式 — 切换身份</view>
-      <view class="role-btns">
-        <view class="role-btn {{role==='expert'?'active':''}}" bindtap="switchRole" data-role="expert">🔍 评审专家</view>
-        <view class="role-btn {{role==='admin'?'active':''}}" bindtap="switchRole" data-role="admin">⚙️ 管理员</view>
+    <!-- 会话列表 -->
+    <view class="card" wx:if="{{sessions.length > 0}}">
+      <view class="section-title">评审场次（{{sessions.length}}）</view>
+      <view class="session-item" wx:for="{{sessions}}" wx:key="_id">
+        <view class="session-info" bindtap="goSession" data-id="{{item._id}}">
+          <text class="session-name">{{item.name}}</text>
+          <text class="session-date" wx:if="{{item.date}}">{{item.date}}</text>
+        </view>
+        <view class="session-status">
+          <text class="session-status-tag status-{{item.status}}">
+            {{item.status === 'open' ? '进行中' : item.status === 'closed' ? '已结束' : '草稿'}}
+          </text>
+        </view>
+        <view class="session-actions">
+          <text class="session-action-btn" bindtap="goProgress" data-id="{{item._id}}">📊</text>
+          <text class="session-action-btn" bindtap="goSession" data-id="{{item._id}}">⚙️</text>
+        </view>
       </view>
-      <block wx:if="{{role==='expert'}}">
-        <view class="divider"></view>
-        <picker range="{{reviewerNames}}" value="{{reviewerIndex}}" bindchange="onReviewerChange">
-          <view class="picker-display">
-            <text>{{currentReviewer.name}}</text>
-            <text class="picker-arrow">▼</text>
-          </view>
-        </picker>
-      </block>
     </view>
 
-    <!-- 专家仪表盘 -->
-    <block wx:if="{{role==='expert'}}">
-      <view class="card stats">
-        <view class="stats-title">我的评审任务</view>
-        <view class="stats-row">
-          <view class="stat-item" bindtap="goProjects" data-status="pending">
-            <text class="stat-num pending">{{stats.pendingReviews}}</text>
-            <text class="stat-label">待评审</text>
-          </view>
-          <view class="stat-item" bindtap="goProjects" data-status="done">
-            <text class="stat-num done">{{stats.doneReviews}}</text>
-            <text class="stat-label">已提交</text>
-          </view>
-          <view class="stat-item" bindtap="goProjects" data-status="returned">
-            <text class="stat-num returned">{{stats.returnedReviews}}</text>
-            <text class="stat-label">被退回</text>
-          </view>
+    <!-- 创建会话入口 -->
+    <view class="card actions">
+      <view class="action-item" bindtap="goCreateSession">
+        <view class="action-icon">➕</view>
+        <view class="action-text">
+          <text class="action-title">创建评审场次</text>
+          <text class="action-desc">新增路演评审活动</text>
         </view>
+        <text class="action-arrow">→</text>
       </view>
-
-      <view class="card actions">
-        <view class="action-item" bindtap="goProjects">
-          <view class="action-icon">📋</view>
-          <view class="action-text">
-            <text class="action-title">我的评审</text>
-            <text class="action-desc">查看分配给我的项目</text>
-          </view>
-          <text class="action-arrow">→</text>
-        </view>
-      </view>
-    </block>
-
-    <!-- 管理员仪表盘 -->
-    <block wx:if="{{role==='admin'}}">
-      <view class="card stats">
-        <view class="stats-title">评审概况</view>
-        <view class="stats-row">
-          <view class="stat-item" bindtap="goProjects" data-status="all">
-            <text class="stat-num">{{stats.totalProjects}}</text>
-            <text class="stat-label">项目总数</text>
-          </view>
-          <view class="stat-item">
-            <text class="stat-num pending">{{stats.pendingReviews}}</text>
-            <text class="stat-label">评审中</text>
-          </view>
-          <view class="stat-item">
-            <text class="stat-num done">{{stats.doneReviews}}</text>
-            <text class="stat-label">已完成</text>
-          </view>
-        </view>
-        <view class="stats-row" style="margin-top:16rpx">
-          <view class="stat-item">
-            <text class="stat-num warn">{{stats.unassigned}}</text>
-            <text class="stat-label">未指派</text>
-          </view>
-          <view class="stat-item">
-            <text class="stat-num">{{stats.returnedReviews}}</text>
-            <text class="stat-label">退回</text>
-          </view>
-        </view>
-      </view>
-
-      <view class="card actions">
-        <view class="action-item" bindtap="goSummary">
-          <view class="action-icon">📊</view>
-          <view class="action-text">
-            <text class="action-title">结果汇总</text>
-            <text class="action-desc">查看所有项目得分排名</text>
-          </view>
-          <text class="action-arrow">→</text>
-        </view>
-
-        <view class="action-item" bindtap="goAdmin">
-          <view class="action-icon">⚙️</view>
-          <view class="action-text">
-            <text class="action-title">管理后台</text>
-            <text class="action-desc">项目管理 / 评委指派 / 用户管理</text>
-          </view>
-          <text class="action-arrow">→</text>
-        </view>
-      </view>
-    </block>
-
-    <!-- 领导仪表盘 -->
-    <block wx:if="{{role==='leader'}}">
-      <view class="card stats">
-        <view class="stats-title">评审概况</view>
-        <view class="stats-row">
-          <view class="stat-item">
-            <text class="stat-num">{{stats.totalProjects}}</text>
-            <text class="stat-label">参评项目</text>
-          </view>
-          <view class="stat-item">
-            <text class="stat-num done">{{stats.doneReviews}}</text>
-            <text class="stat-label">已完成</text>
-          </view>
-          <view class="stat-item">
-            <text class="stat-num pending">{{stats.pendingReviews}}</text>
-            <text class="stat-label">进行中</text>
-          </view>
-        </view>
-      </view>
-      <view class="card actions">
-        <view class="action-item" bindtap="goSummary">
-          <view class="action-icon">📊</view>
-          <view class="action-text">
-            <text class="action-title">结果汇总</text>
-            <text class="action-desc">查看所有项目得分排名</text>
-          </view>
-          <text class="action-arrow">→</text>
-        </view>
-      </view>
-    </block>
+    </view>
   </block>
 </view>

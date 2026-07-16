@@ -188,3 +188,16 @@
   letter-spacing: 4rpx;
 }
 .submit-btn[disabled] { background: #ccc; }
+
+/* 状态横幅 */
+.readonly-banner, .returned-banner, .status-banner { text-align: center; padding: 16rpx 24rpx; margin: 0 20rpx 20rpx; border-radius: 8rpx; font-size: 24rpx; }
+.status-banner-locked { background: #f5f5f5; color: #999; }
+.status-banner-submitted { background: #e8f8ee; color: #07c160; }
+.status-banner-draft { background: #fff8e1; color: #ff976a; }
+
+/* 签名确认 */
+.sign-section { margin-top: 0; }
+.confirm-row { margin-top: 20rpx; }
+.confirm-label { display: flex; align-items: center; font-size: 26rpx; color: var(--text-secondary); }
+.confirm-label checkbox { margin-right: 10rpx; }
+.sign-hint { font-size: 22rpx; color: var(--text-secondary); display: block; margin-top: 8rpx; }

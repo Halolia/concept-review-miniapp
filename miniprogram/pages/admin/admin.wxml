@@ -1,4 +1,4 @@
-<!-- 管理员面板 -->
+<!-- 管理员面板 — 路演现场评分 -->
 <view class="container">
 
   <view wx:if="{{loading}}" class="empty-state">
@@ -7,99 +7,136 @@
   </view>
 
   <block wx:else>
+  <!-- 场次选择器 -->
+  <view class="card" wx:if="{{sessions.length > 0}}">
+    <view class="section-title">当前场次</view>
+    <view class="round-radio-list">
+      <view class="round-radio-item {{selectedSessionId===item._id?'round-radio-active':''}}"
+            wx:for="{{sessions}}" wx:key="_id" bindtap="selectSession" data-id="{{item._id}}">
+        <view class="round-radio-dot {{selectedSessionId===item._id?'round-radio-dot-checked':''}}"></view>
+        <text class="round-radio-label">{{item.name}}</text>
+        <text class="round-radio-status status-{{item.status}}">
+          {{item.status === 'open' ? '进行中' : item.status === 'closed' ? '已结束' : '草稿'}}
+        </text>
+      </view>
+    </view>
+  </view>
+
+  <view class="card" wx:if="{{sessions.length === 0 && activeTab !== 'session'}}">
+    <text style="color:var(--text-secondary);font-size:24rpx">请先在"活动管理"中创建场次</text>
+  </view>
+
   <!-- 标签切换 -->
   <view class="tab-bar">
-    <view class="tab-item {{activeTab==='projects'?'active':''}}" bindtap="switchTab" data-tab="projects">项目管理</view>
-    <view class="tab-item {{activeTab==='assign'?'active':''}}" bindtap="switchTab" data-tab="assign">评委指派</view>
-    <view class="tab-item {{activeTab==='reviewers'?'active':''}}" bindtap="switchTab" data-tab="reviewers">评委管理</view>
-    <view class="tab-item {{activeTab==='rounds'?'active':''}}" bindtap="switchTab" data-tab="rounds">评审批次</view>
+    <view class="tab-item {{activeTab==='session'?'active':''}}" bindtap="switchTab" data-tab="session">活动管理</view>
+    <view class="tab-item {{activeTab==='project'?'active':''}}" bindtap="switchTab" data-tab="project">项目管理</view>
+    <view class="tab-item {{activeTab==='reviewer'?'active':''}}" bindtap="switchTab" data-tab="reviewer">评委管理</view>
+    <view class="tab-item {{activeTab==='progress'?'active':''}}" bindtap="switchTab" data-tab="progress">进度看板</view>
   </view>
 
-  <!-- === 项目管理 === -->
-  <view wx:if="{{activeTab==='projects'}}">
+  <!-- ═══ Tab 1: 活动管理 ═══ -->
+  <view wx:if="{{activeTab==='session'}}">
+    <!-- 创建新场次 -->
     <view class="card add-card">
-      <view class="add-title">添加新项目</view>
-      <input class="add-input" placeholder="项目名称 *" value="{{newProject.name}}" bindinput="onProjInput" data-field="name"/>
-      <input class="add-input" placeholder="依托单位" value="{{newProject.institution}}" bindinput="onProjInput" data-field="institution"/>
-      <input class="add-input" placeholder="项目负责人" value="{{newProject.leader}}" bindinput="onProjInput" data-field="leader"/>
-      <input class="add-input" placeholder="项目简介" value="{{newProject.description}}" bindinput="onProjInput" data-field="description"/>
-      <button class="btn btn-primary btn-small" style="margin-top:12rpx" bindtap="addProject">添加项目</button>
+      <view class="add-title">创建新场次</view>
+      <input class="add-input" placeholder="场次名称 *（如：2024年第一批路演）" value="{{newSession.name}}" bindinput="onNewSessionInput" data-field="name"/>
+      <input class="add-input" placeholder="日期（如：2024-12-20）" value="{{newSession.date}}" bindinput="onNewSessionInput" data-field="date"/>
+      <input class="add-input" placeholder="截止时间（选填）" value="{{newSession.deadline}}" bindinput="onNewSessionInput" data-field="deadline"/>
+      <button class="btn btn-primary btn-small" style="margin-top:12rpx" bindtap="createSession">创建场次</button>
     </view>
 
-    <view class="card" wx:if="{{projects.length > 0}}">
-      <view class="section-title" style="margin-bottom:20rpx">已有项目（{{projects.length}}）</view>
-      <view class="proj-item" wx:for="{{projects}}" wx:key="_id">
-        <view class="pj-info">
-          <text class="pj-name">{{item.name}}</text>
-          <text class="pj-institution">{{item.institution || '未填写'}} {{item.leader ? '· '+item.leader : ''}}</text>
-          <text class="pj-status" wx:if="{{item.status === 'archived'}}" style="color:#ee0a24">【已归档】</text>
-        </view>
-        <view class="pj-actions">
-          <text class="pj-review-count" wx:if="{{item.submittedCount > 0}}">{{item.submittedCount}}人已提交</text>
-          <text class="pj-del" bindtap="archiveProject" data-id="{{item._id}}">归档</text>
-        </view>
+    <!-- 场次列表 -->
+    <view class="card" wx:if="{{sessions.length > 0}}">
+      <view class="section-title" style="margin-bottom:20rpx">已有场次（{{sessions.length}}）</view>
+      <view class="round-item" wx:for="{{sessions}}" wx:key="_id">
+        <!-- 编辑中 -->
+        <block wx:if="{{editSessionId === item._id}}">
+          <view class="round-edit-area">
+            <input class="add-input" style="margin-bottom:8rpx" placeholder="场次名称" value="{{editSessionData.name}}" bindinput="onEditSessionInput" data-field="name"/>
+            <input class="add-input" style="margin-bottom:8rpx" placeholder="日期" value="{{editSessionData.date}}" bindinput="onEditSessionInput" data-field="date"/>
+            <input class="add-input" style="margin-bottom:8rpx" placeholder="截止时间" value="{{editSessionData.deadline}}" bindinput="onEditSessionInput" data-field="deadline"/>
+            <view class="round-edit-actions">
+              <text class="rev-action-btn rev-action-confirm" bindtap="saveEditSession">保存</text>
+              <text class="rev-action-btn rev-action-cancel" bindtap="cancelEditSession">取消</text>
+            </view>
+          </view>
+        </block>
+
+        <!-- 查看模式 -->
+        <block wx:else>
+          <view class="round-info">
+            <text class="round-name">{{item.name}}</text>
+            <text class="round-no" wx:if="{{item.date}}">日期：{{item.date}}</text>
+            <text class="round-deadline" wx:if="{{item.deadline}}">截止：{{item.deadline}}</text>
+          </view>
+          <view class="round-actions">
+            <text class="round-status-badge status-{{item.status}}">
+              {{item.status === 'open' ? '进行中' : item.status === 'closed' ? '已结束' : '草稿'}}
+            </text>
+            <text class="rev-action-btn round-action-edit" bindtap="startEditSession" data-id="{{item._id}}">编辑</text>
+            <text wx:if="{{item.status === 'draft'}}" class="rev-action-btn rev-action-confirm" bindtap="doOpenSession" data-id="{{item._id}}">开启</text>
+            <text wx:if="{{item.status === 'open'}}" class="rev-action-btn rev-action-disable" bindtap="doCloseSession" data-id="{{item._id}}">关闭</text>
+          </view>
+        </block>
       </view>
     </view>
   </view>
 
-  <!-- === 评委指派 === -->
-  <view wx:if="{{activeTab==='assign'}}">
-    <!-- 批次选择器 -->
-    <view class="card" wx:if="{{rounds.length > 0}}">
-      <view class="section-title" style="margin-bottom:16rpx">当前评审批次</view>
-      <view class="round-radio-list">
-        <view class="round-radio-item {{selectedRoundId===item._id?'round-radio-active':''}}"
-              wx:for="{{rounds}}" wx:key="_id" bindtap="selectRound" data-id="{{item._id}}">
-          <view class="round-radio-dot {{selectedRoundId===item._id?'round-radio-dot-checked':''}}"></view>
-          <text class="round-radio-label">{{item.name}}（{{item.roundNo}}）</text>
-          <text class="round-radio-status status-{{item.status}}">{{item.status==='open'?'已开启':item.status==='closed'?'已关闭':'草稿'}}</text>
-        </view>
-      </view>
-    </view>
-    <view class="card" wx:if="{{rounds.length === 0}}">
-      <text style="color:var(--text-secondary);font-size:24rpx">请先在"评审批次"中创建并选择批次</text>
+  <!-- ═══ Tab 2: 项目管理 ═══ -->
+  <view wx:if="{{activeTab==='project'}}">
+    <view wx:if="{{!selectedSessionId}}" class="card">
+      <text style="color:var(--text-secondary);font-size:24rpx">请先选择一个场次</text>
     </view>
 
-    <view class="card" wx:for="{{projects}}" wx:key="_id" wx:if="{{item.status !== 'archived'}}">
-      <view class="assign-proj-name">
-        {{item.name}}
-        <text class="assign-count" wx:if="{{item.submittedCount > 0}}">（{{item.submittedCount}}/{{item.assignedReviewers.length}} 已提交）</text>
+    <block wx:else>
+      <!-- 添加项目 -->
+      <view class="card add-card">
+        <view class="add-title">添加项目到"{{selectedSession.name || ''}}"</view>
+        <input class="add-input" placeholder="项目名称 *" value="{{newProject.name}}" bindinput="onProjInput" data-field="name"/>
+        <input class="add-input" placeholder="依托单位" value="{{newProject.institution}}" bindinput="onProjInput" data-field="institution"/>
+        <input class="add-input" placeholder="项目负责人" value="{{newProject.leader}}" bindinput="onProjInput" data-field="leader"/>
+        <input class="add-input" placeholder="项目简介" value="{{newProject.description}}" bindinput="onProjInput" data-field="description"/>
+        <view class="add-actions">
+          <button class="btn btn-primary btn-small" bindtap="addProject">添加项目</button>
+          <button class="btn btn-outline btn-small" style="margin-left:12rpx" bindtap="importProjects">批量导入</button>
+        </view>
       </view>
-      <view class="assign-reviewers">
-        <text class="assign-label">已分配评委：</text>
-        <view class="assign-tags">
-          <view class="assign-tag" wx:for="{{item.assignedReviewers}}" wx:for-item="r" wx:key="id">
-            {{r.name}}
-            <text class="assign-tag-status {{r.status==='submitted'||r.status==='resubmitted'||r.status==='locked'?'tag-good':'tag-pending'}}">
-              {{r.status === 'submitted' ? '✓' : r.status === 'returned' ? '↩' : ''}}
-            </text>
-            <text class="assign-remove" bindtap="removeReviewer"
-                  data-assignment-id="{{r.assignmentId}}"
-                  data-name="{{r.name}}"
-                  data-project-id="{{item._id}}"
-                  data-submitted="{{r.status==='submitted'||r.status==='resubmitted'}}">×</text>
+
+      <!-- 项目列表 -->
+      <view class="card" wx:if="{{sessionProjects.length > 0}}">
+        <view class="section-title" style="margin-bottom:20rpx">场次项目（{{sessionProjects.length}}）</view>
+        <view class="proj-item" wx:for="{{sessionProjects}}" wx:key="_id">
+          <view class="pj-info">
+            <text class="pj-name">{{item.name}}</text>
+            <text class="pj-institution">{{item.institution || '未填写'}} {{item.leader ? '· ' + item.leader : ''}}</text>
+          </view>
+          <view class="pj-actions">
+            <text class="pj-del" bindtap="removeProject" data-id="{{item._id}}" data-name="{{item.name}}">移除</text>
           </view>
         </view>
       </view>
-      <picker range="{{allReviewerNames}}" bindchange="assignReviewer" data-project-id="{{item._id}}">
-        <view class="assign-add-btn">+ 添加评委</view>
-      </picker>
-    </view>
+
+      <view class="card" wx:if="{{sessionProjects.length === 0}}">
+        <text style="color:var(--text-secondary);font-size:24rpx">该场次暂无项目，请添加</text>
+      </view>
+    </block>
   </view>
 
-  <!-- === 评委管理 === -->
-  <view wx:if="{{activeTab==='reviewers'}}">
+  <!-- ═══ Tab 3: 评委管理 ═══ -->
+  <view wx:if="{{activeTab==='reviewer'}}">
+    <!-- 添加评委 -->
     <view class="card add-card">
-      <view class="add-title">添加专家</view>
+      <view class="add-title">添加评委</view>
       <input class="add-input" placeholder="OPENID（可后续绑定）" value="{{newReviewer.openid}}" bindinput="onRevInput" data-field="openid"/>
       <input class="add-input" placeholder="姓名 *" value="{{newReviewer.name}}" bindinput="onRevInput" data-field="name"/>
       <input class="add-input" placeholder="单位" value="{{newReviewer.organization}}" bindinput="onRevInput" data-field="organization"/>
       <input class="add-input" placeholder="职称" value="{{newReviewer.title}}" bindinput="onRevInput" data-field="title"/>
-      <button class="btn btn-primary btn-small" style="margin-top:12rpx" bindtap="addReviewer">添加专家</button>
+      <button class="btn btn-primary btn-small" style="margin-top:12rpx" bindtap="addReviewer">添加评委</button>
     </view>
 
+    <!-- 评委列表 -->
     <view class="card" wx:if="{{reviewers.length > 0}}">
-      <view class="section-title" style="margin-bottom:20rpx">专家列表（{{reviewers.length}}）</view>
+      <view class="section-title" style="margin-bottom:20rpx">评委列表（{{reviewers.length}}）</view>
       <view class="reviewer-item" wx:for="{{reviewers}}" wx:key="_id">
         <view class="rev-info">
           <view class="rev-name-row">
@@ -116,71 +153,74 @@
             <text class="rev-action-btn rev-action-cancel" bindtap="cancelBindOpenid">取消</text>
           </block>
           <block wx:else>
-            <text wx:if="{{!item.openid}}" class="rev-action-btn rev-action-bind" bindtap="startBindOpenid" data-id="{{item._id}}" data-name="{{item.name}}">绑定OPENID</text>
-            <text wx:if="{{item.openid}}" class="rev-action-btn rev-action-unbind" bindtap="unbindOpenid" data-id="{{item._id}}" data-name="{{item.name}}">解绑</text>
-            <text wx:if="{{item.status === 'active'}}" class="rev-action-btn rev-action-disable" bindtap="disableReviewer" data-id="{{item._id}}" data-name="{{item.name}}">停用</text>
-            <text wx:else class="rev-action-btn rev-action-enable" bindtap="enableReviewer" data-id="{{item._id}}">启用</text>
+            <text wx:if="{{!item.openid}}" class="rev-action-btn rev-action-bind" bindtap="startBindOpenid" data-id="{{item._id}}" data-name="{{item.name}}">绑定</text>
+            <text wx:if="{{item.openid && selectedSessionId}}" class="rev-action-btn rev-action-bind" bindtap="generateQR" data-id="{{item._id}}" data-name="{{item.name}}">生成QR</text>
+            <text wx:if="{{item.openid && selectedSessionId}}" class="rev-action-btn rev-action-unbind" bindtap="doResetBinding" data-id="{{item._id}}" data-name="{{item.name}}">重置</text>
           </block>
         </view>
       </view>
     </view>
+
+    <view class="card" wx:if="{{reviewers.length === 0}}">
+      <text style="color:var(--text-secondary);font-size:24rpx">暂未添加评委</text>
+    </view>
   </view>
 
-  <!-- === 评审批次 === -->
-  <view wx:if="{{activeTab==='rounds'}}">
-    <!-- 创建新批次 -->
-    <view class="card add-card">
-      <view class="add-title" bindtap="toggleRoundCreate">
-        创建评审批次
-        <text style="font-size:22rpx;color:var(--text-secondary);font-weight:400">{{showRoundCreate ? ' ▲ 收起' : ' ▼ 展开'}}</text>
-      </view>
-      <block wx:if="{{showRoundCreate}}">
-        <input class="add-input" placeholder="批次名称 *（如：2024年第一批）" value="{{newRound.name}}" bindinput="onNewRoundInput" data-field="name"/>
-        <input class="add-input" placeholder="批次号 *（如：2024-01）" value="{{newRound.roundNo}}" bindinput="onNewRoundInput" data-field="roundNo"/>
-        <input class="add-input" placeholder="截止日期（选填，如：2024-12-31）" value="{{newRound.deadline}}" bindinput="onNewRoundInput" data-field="deadline"/>
-        <button class="btn btn-primary btn-small" style="margin-top:12rpx" bindtap="createRound">创建批次</button>
-      </block>
+  <!-- ═══ Tab 4: 进度看板 ═══ -->
+  <view wx:if="{{activeTab==='progress'}}">
+    <view wx:if="{{!selectedSessionId}}" class="card">
+      <text style="color:var(--text-secondary);font-size:24rpx">请先选择一个场次</text>
     </view>
 
-    <!-- 批次列表 -->
-    <view class="card" wx:if="{{rounds.length > 0}}">
-      <view class="section-title" style="margin-bottom:20rpx">已有批次（{{rounds.length}}）</view>
-      <view class="round-item" wx:for="{{rounds}}" wx:key="_id">
-        <!-- 当前选中标识 -->
-        <view class="round-select-area" bindtap="selectRound" data-id="{{item._id}}">
-          <view class="round-radio-dot {{selectedRoundId===item._id?'round-radio-dot-checked':''}}"></view>
-        </view>
-
-        <!-- 编辑中 -->
-        <block wx:if="{{editRoundId === item._id}}">
-          <view class="round-edit-area">
-            <input class="add-input" style="margin-bottom:8rpx" placeholder="批次名称" value="{{editRoundData.name}}" bindinput="onEditRoundInput" data-field="name"/>
-            <input class="add-input" style="margin-bottom:8rpx" placeholder="截止日期" value="{{editRoundData.deadline}}" bindinput="onEditRoundInput" data-field="deadline"/>
-            <view class="round-edit-actions">
-              <text class="rev-action-btn rev-action-confirm" bindtap="saveEditRound">保存</text>
-              <text class="rev-action-btn rev-action-cancel" bindtap="cancelEditRound">取消</text>
+    <block wx:else>
+      <!-- 按项目维度 -->
+      <view class="card">
+        <view class="section-title">📊 项目维度（提交/总评审数）</view>
+        <view wx:if="{{projectProgress.length > 0}}">
+          <view class="progress-table">
+            <view class="progress-row progress-row-header">
+              <text class="progress-col-name">项目</text>
+              <text class="progress-col-count">进度</text>
+              <text class="progress-col-status">状态</text>
+            </view>
+            <view class="progress-row" wx:for="{{projectProgress}}" wx:key="projectId">
+              <text class="progress-col-name">{{item.projectName}}</text>
+              <text class="progress-col-count">{{item.submitted || 0}}/{{item.total || 0}}</text>
+              <text class="progress-col-status">
+                <text class="tag {{item.submitted >= item.total ? 'tag-good' : 'tag-warn'}}">
+                  {{item.submitted >= item.total ? '已完成' : '进行中'}}
+                </text>
+              </text>
             </view>
           </view>
-        </block>
-
-        <!-- 查看模式 -->
-        <block wx:else>
-          <view class="round-info">
-            <text class="round-name">{{item.name}}</text>
-            <text class="round-no">批次号：{{item.roundNo}}</text>
-            <text class="round-deadline" wx:if="{{item.deadline}}">截止：{{item.deadline}}</text>
-          </view>
-          <view class="round-actions">
-            <text class="round-status-badge status-{{item.status}}">
-              {{item.status === 'open' ? '已开启' : item.status === 'closed' ? '已关闭' : '草稿'}}
-            </text>
-            <text class="rev-action-btn round-action-edit" bindtap="startEditRound" data-id="{{item._id}}">编辑</text>
-            <text wx:if="{{item.status === 'draft'}}" class="rev-action-btn rev-action-confirm" bindtap="openRound" data-id="{{item._id}}">开启</text>
-            <text wx:if="{{item.status === 'open'}}" class="rev-action-btn rev-action-disable" bindtap="closeRound" data-id="{{item._id}}">关闭</text>
-          </view>
-        </block>
+        </view>
+        <view wx:else style="text-align:center;padding:40rpx;color:var(--text-secondary)">暂无项目数据</view>
       </view>
-    </view>
+
+      <!-- 按评委维度 -->
+      <view class="card">
+        <view class="section-title">👤 评委维度（已评分/总数）</view>
+        <view wx:if="{{reviewerProgress.length > 0}}">
+          <view class="progress-table">
+            <view class="progress-row progress-row-header">
+              <text class="progress-col-name">评委</text>
+              <text class="progress-col-count">进度</text>
+              <text class="progress-col-status">状态</text>
+            </view>
+            <view class="progress-row" wx:for="{{reviewerProgress}}" wx:key="reviewerId">
+              <text class="progress-col-name">{{item.reviewerName}}</text>
+              <text class="progress-col-count">{{item.scored || 0}}/{{item.total || 0}}</text>
+              <text class="progress-col-status">
+                <text class="tag {{item.scored >= item.total ? 'tag-good' : 'tag-warn'}}">
+                  {{item.scored >= item.total ? '已完成' : '进行中'}}
+                </text>
+              </text>
+            </view>
+          </view>
+        </view>
+        <view wx:else style="text-align:center;padding:40rpx;color:var(--text-secondary)">暂无评委数据</view>
+      </view>
+    </block>
   </view>
 
   </block>

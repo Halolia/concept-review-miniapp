@@ -45,3 +45,26 @@
 }
 .rd-comments-label { font-size: 24rpx; font-weight: 500; color: var(--text-secondary); display: block; margin-bottom: 8rpx; }
 .rd-comments-text { font-size: 26rpx; color: var(--text); line-height: 1.6; }
+
+/* 折叠展开 */
+.rd-toggle { font-size: 28rpx; color: var(--text-secondary); margin-left: 12rpx; flex-shrink: 0; }
+.rd-expand { margin-top: 16rpx; padding-top: 16rpx; border-top: 1rpx dashed var(--border); }
+
+/* 状态标签 */
+.rd-status-tag { font-size: 22rpx; padding: 4rpx 0; margin-bottom: 12rpx; color: var(--text-secondary); }
+.rd-actions { margin-top: 12rpx; }
+
+/* 经费 */
+.rd-funding { margin-top: 12rpx; padding: 12rpx; background: var(--bg); border-radius: 8rpx; }
+.rd-funding-label { font-size: 24rpx; color: var(--text-secondary); }
+.rd-funding-value { font-size: 28rpx; font-weight: 600; color: var(--text); }
+.rd-funding-comment { display: block; font-size: 22rpx; color: var(--text-secondary); margin-top: 4rpx; }
+
+/* 按钮 */
+.btn-small { padding: 10rpx 24rpx; font-size: 24rpx; }
+
+/* 得分详情统计 */
+.score-detail { display: flex; flex-wrap: wrap; margin-top: 24rpx; padding-top: 24rpx; border-top: 1rpx solid var(--border); }
+.sd-item { width: 33.33%; text-align: center; margin-bottom: 16rpx; }
+.sd-label { display: block; font-size: 22rpx; color: var(--text-secondary); }
+.sd-value { display: block; font-size: 28rpx; font-weight: 600; margin-top: 4rpx; }

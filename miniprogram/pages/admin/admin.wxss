@@ -274,3 +274,27 @@
   color: var(--text-secondary);
   margin-right: 16rpx;
 }
+
+/* 添加项目区域 */
+.add-actions { display: flex; margin-top: 8rpx; }
+
+/* 进度看板表格 */
+.progress-table { }
+.progress-row {
+  display: flex;
+  align-items: center;
+  padding: 16rpx 0;
+  border-bottom: 1rpx solid var(--border);
+}
+.progress-row:last-child { border-bottom: none; }
+.progress-row-header {
+  background: var(--bg);
+  padding: 12rpx 0;
+  border-radius: 6rpx;
+  font-size: 24rpx;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+.progress-col-name { flex: 1; font-size: 26rpx; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.progress-col-count { width: 100rpx; text-align: center; font-size: 26rpx; font-weight: 500; }
+.progress-col-status { width: 100rpx; text-align: right; }

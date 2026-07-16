@@ -1,11 +1,9 @@
 /**
- * 评审打分页 v1.0.2
+ * 评审打分页 — 路演现场评分
+ * 状态：none(新) / draft(草稿) / submitted(已提交可修改) / locked(已锁定只读)
  */
-const app = getApp();
 const { SCORING_DIMENSIONS, getBarColor, calcTotal } = require('../../utils/scoring');
-const { getCurrentUserSync } = require('../../services/authService');
-const { expertGetMyReview, expertSubmitReview, expertSaveReviewDraft } = require('../../services/reviewService');
-const { DEBUG_MODE } = require('../../utils/request');
+const { getMyReview, saveDraft, submitReview } = require('../../services/reviewService');
 
 function buildDimensions(scores) {
   return SCORING_DIMENSIONS.map(dim => ({
@@ -25,42 +23,69 @@ function buildDimensions(scores) {
 
 Page({
   data: {
-    projectId: '', projectName: '', assignmentId: '',
-    isReadonly: false, isReturned: false,
+    projectId: '', projectName: '',
+    reviewStatus: 'none',  // none | draft | submitted | locked
     dimensions: buildDimensions({}), scores: {},
     totalScore: 0, grade: { label: '-', color: '#999' },
     comments: '', recommendedFunding: '', fundingComment: '',
-    reviewerName: '', returnReason: '',
+    reviewerName: '', reviewId: '',
     submitting: false, saving: false,
-    isEdit: false, savedReviewId: null, version: 1, reviewStatus: ''
+    confirmed: false       // 签名确认 checkbox
   },
 
   onLoad(options) {
     const projectId = options.projectId;
     const projectName = decodeURIComponent(options.projectName || '');
-    const assignmentId = options.assignmentId || '';
-    const readonly = options.readonly === 'true';
 
     const scores = {};
-    SCORING_DIMENSIONS.forEach(dim => { dim.items.forEach(item => { scores[item.id] = 0; }); });
+    SCORING_DIMENSIONS.forEach(dim => {
+      dim.items.forEach(item => { scores[item.id] = 0; });
+    });
 
-    let reviewerName = '';
-    if (DEBUG_MODE) {
-      reviewerName = app.globalData.currentReviewerName;
-    } else {
-      const user = getCurrentUserSync();
-      reviewerName = user ? user.name : '';
-    }
+    const app = getApp();
+    const reviewerName = app.globalData.userName || '';
 
     this.setData({
-      projectId, projectName, assignmentId,
-      isReadonly: readonly, scores, reviewerName,
+      projectId, projectName,
+      scores, reviewerName,
       dimensions: buildDimensions(scores)
     });
-    this.loadReview();
+    this.loadExistingReview();
   },
 
-  // ── 统一更新评分 ──
+  /** 加载已有评审 */
+  async loadExistingReview() {
+    try {
+      const app = getApp();
+      const review = await getMyReview(
+        app.globalData.sessionId,
+        this.data.projectId
+      );
+      if (review) {
+        const newScores = {};
+        SCORING_DIMENSIONS.forEach(dim => {
+          dim.items.forEach(item => {
+            newScores[item.id] = review.scores && review.scores[item.id] !== undefined
+              ? Number(review.scores[item.id]) : 0;
+          });
+        });
+        this.setData({
+          scores: newScores,
+          comments: review.comments || '',
+          recommendedFunding: String(review.recommendedFunding || ''),
+          fundingComment: review.fundingComment || '',
+          reviewerName: review.expertName || review.reviewerName || this.data.reviewerName,
+          reviewStatus: review.status || 'none',
+          reviewId: review._id || '',
+        });
+        this.updateScores(newScores);
+      }
+    } catch (e) {
+      // 无已有评审，保持 none 状态
+    }
+  },
+
+  /** 统一更新评分 */
   updateScores(nextScores) {
     const result = calcTotal(nextScores);
     this.setData({
@@ -71,37 +96,14 @@ Page({
     });
   },
 
-  // ── 加载评审 ──
-  async loadReview() {
-    const review = await expertGetMyReview(this.data.assignmentId).catch(() => null);
-    if (review) {
-      this.applyReview(review);
-      this.setData({ isEdit: true, savedReviewId: review._id, version: review.version || 1 });
-    }
-  },
-
-  applyReview(review) {
-    const newScores = {};
-    SCORING_DIMENSIONS.forEach(dim => { dim.items.forEach(item => { newScores[item.id] = 0; }); });
-    if (review.scores) {
-      Object.keys(newScores).forEach(k => { if (review.scores[k] !== undefined) newScores[k] = Number(review.scores[k]) || 0; });
-    }
-    this.setData({
-      scores: newScores,
-      comments: review.comments || '',
-      recommendedFunding: String(review.recommendedFunding || ''),
-      fundingComment: review.fundingComment || '',
-      reviewerName: review.expertName || review.reviewerName || this.data.reviewerName,
-      reviewStatus: review.status || '',
-      isReturned: review.status === 'returned',
-      returnReason: review.returnReason || ''
-    });
-    this.updateScores(newScores);
+  /** 是否可编辑：非 locked 即可 */
+  get editable() {
+    return this.data.reviewStatus !== 'locked';
   },
 
   // ── 评分操作 ──
   increase(e) {
-    if ((this.data.isReadonly && !this.data.isReturned) || this.data.reviewStatus === 'locked') return;
+    if (!this.editable) return;
     const key = e.currentTarget.dataset.key;
     const max = parseInt(e.currentTarget.dataset.max);
     const val = this.data.scores[key] || 0;
@@ -111,7 +113,7 @@ Page({
   },
 
   decrease(e) {
-    if ((this.data.isReadonly && !this.data.isReturned) || this.data.reviewStatus === 'locked') return;
+    if (!this.editable) return;
     const key = e.currentTarget.dataset.key;
     const val = this.data.scores[key] || 0;
     if (val > 0) {
@@ -120,13 +122,14 @@ Page({
   },
 
   onManualInput(e) {
-    if ((this.data.isReadonly && !this.data.isReturned) || this.data.reviewStatus === 'locked') return;
+    if (!this.editable) return;
     const key = e.currentTarget.dataset.key;
     const raw = parseInt(e.detail.value);
     this.updateScores({ ...this.data.scores, [key]: isNaN(raw) ? 0 : raw });
   },
 
   onBlurCheck(e) {
+    if (!this.editable) return;
     const key = e.currentTarget.dataset.key;
     let val = this.data.scores[key] || 0;
     let maxScore = 5;
@@ -144,21 +147,21 @@ Page({
   onCommentInput(e) { this.setData({ comments: e.detail.value }); },
   onFundingInput(e) { this.setData({ recommendedFunding: e.detail.value }); },
   onFundingCommentInput(e) { this.setData({ fundingComment: e.detail.value }); },
-  onNameInput(e) { if (DEBUG_MODE) this.setData({ reviewerName: e.detail.value }); },
+  onConfirmChange() { this.setData({ confirmed: !this.data.confirmed }); },
 
   // ── 保存草稿 ──
   async saveDraft() {
-    if ((this.data.isReadonly && !this.data.isReturned) || this.data.reviewStatus === 'locked') return;
-    if (this.data.saving) return;
+    if (!this.editable || this.data.saving) return;
     this.setData({ saving: true });
     try {
-      await expertSaveReviewDraft({
-        assignmentId: this.data.assignmentId,
+      const app = getApp();
+      await saveDraft(app.globalData.sessionId, this.data.projectId, {
         scores: this.data.scores,
         comments: this.data.comments,
         recommendedFunding: this.data.recommendedFunding,
         fundingComment: this.data.fundingComment
       });
+      this.setData({ reviewStatus: 'draft' });
       wx.showToast({ title: '草稿已保存', icon: 'success' });
     } catch (e) {
       wx.showToast({ title: e.message || '保存失败', icon: 'none' });
@@ -169,16 +172,12 @@ Page({
 
   // ── 提交评审 ──
   submitReview() {
-    const { scores, comments, recommendedFunding, reviewerName, isReadonly, isReturned, reviewStatus } = this.data;
-    if ((isReadonly && !isReturned) || reviewStatus === 'locked') return;
+    if (!this.editable) return;
 
-    if (DEBUG_MODE && !reviewerName.trim()) {
-      wx.showToast({ title: '请输入评审专家姓名', icon: 'none' }); return;
-    }
+    const { scores, comments, recommendedFunding, confirmed } = this.data;
     if (!comments.trim()) {
       wx.showToast({ title: '请输入评审意见', icon: 'none' }); return;
     }
-    // 经费必填
     if (!recommendedFunding && recommendedFunding !== '0') {
       wx.showToast({ title: '建议经费不能为空', icon: 'none' }); return;
     }
@@ -188,6 +187,9 @@ Page({
     }
     if (funding === 0 && (!this.data.fundingComment || !this.data.fundingComment.trim())) {
       wx.showToast({ title: '经费为0万元时请填写经费说明', icon: 'none' }); return;
+    }
+    if (!confirmed) {
+      wx.showToast({ title: '请勾选确认签名', icon: 'none' }); return;
     }
 
     let hasZero = false;
@@ -208,11 +210,14 @@ Page({
     if (this.data.submitting) return;
     this.setData({ submitting: true });
     try {
-      await expertSubmitReview(
-        this.data.assignmentId, this.data.scores, this.data.comments,
-        this.data.recommendedFunding, this.data.fundingComment
-      );
-      wx.showToast({ title: this.data.isReturned ? '重新提交成功' : '提交成功', icon: 'success' });
+      const app = getApp();
+      await submitReview(app.globalData.sessionId, this.data.projectId, {
+        scores: this.data.scores,
+        comments: this.data.comments,
+        recommendedFunding: this.data.recommendedFunding,
+        fundingComment: this.data.fundingComment
+      });
+      wx.showToast({ title: '提交成功', icon: 'success' });
       setTimeout(() => wx.navigateBack(), 1500);
     } catch (e) {
       wx.showToast({ title: e.message || '提交失败', icon: 'none' });

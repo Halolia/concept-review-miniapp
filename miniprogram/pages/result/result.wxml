@@ -1,4 +1,4 @@
-<!-- 单项目评审详情 -->
+<!-- 单项目评审详情 — 路演现场评分 -->
 <view class="container">
   <view wx:if="{{loading}}" class="empty-state">
     <text style="font-size:80rpx">⏳</text>
@@ -9,16 +9,15 @@
     <!-- 项目头部 -->
     <view class="proj-header">
       <text class="ph-name">{{projectName}}</text>
-      <text class="ph-institution" wx:if="{{reviewStatus}}">{{reviewStatus}} · {{reviewCount}}/{{totalAssignments}} 人已提交</text>
+      <text class="ph-institution">已提交 {{reviewCount}}/{{totalAssignments}} 份评审</text>
     </view>
 
     <!-- 综合得分 -->
     <view class="card score-card" wx:if="{{reviews.length > 0}}">
       <view class="big-score">{{avgScore}}</view>
       <view class="big-grade" style="color:{{avgGrade.color}}">{{avgGrade.label}}</view>
-      <view class="review-count">{{reviewCount}}/{{totalAssignments}} 位专家评审</view>
+      <view class="review-count">{{reviewCount}}/{{totalAssignments}} 位评委已提交</view>
 
-      <!-- 详细统计 -->
       <view class="score-detail">
         <view class="sd-item">
           <text class="sd-label">中位数</text>
@@ -37,24 +36,26 @@
           <text class="sd-value">{{range}}</text>
         </view>
         <view class="sd-item">
-          <text class="sd-label">平均建议经费</text>
+          <text class="sd-label">平均经费</text>
           <text class="sd-value">{{avgFunding !== '-' ? avgFunding + '万' : '-'}}</text>
         </view>
       </view>
     </view>
 
-    <!-- 各专家评审详情 -->
+    <!-- 各评委评审卡片 -->
     <view class="review-detail" wx:for="{{reviews}}" wx:key="_id">
       <view class="card rd-card">
-        <view class="rd-header">
+        <!-- 评委头部 -->
+        <view class="rd-header" bindtap="toggleReviewerDetail" data-id="{{item._id}}">
           <view class="rd-expert">
-            <text class="rd-expert-name">👤 {{item.expertName || item.reviewerName}}</text>
+            <text class="rd-expert-name">👤 {{item.expertName || item.reviewerName || '未知'}}</text>
             <text class="rd-time">{{item.timeStr}} {{item.versionLabel}}</text>
           </view>
           <view class="rd-score">
             <text class="rd-total">{{item.totalScore}}</text>
             <text class="rd-grade" style="color:{{item.gradeColor}}">{{item.grade}}</text>
           </view>
+          <text class="rd-toggle">{{expandedReviewers[item._id] ? '▲' : '▼'}}</text>
         </view>
 
         <!-- 状态标签 -->
@@ -64,11 +65,7 @@
           <text wx:elif="{{item.status === 'returned'}}">↩️ 已退回</text>
           <text wx:elif="{{item.status === 'locked'}}">🔒 已锁定</text>
           <text wx:elif="{{item.status === 'draft'}}">📝 草稿</text>
-        </view>
-
-        <!-- 退回按钮（仅管理员可见，仅 submitted/resubmitted 状态） -->
-        <view wx:if="{{item.status === 'submitted' || item.status === 'resubmitted'}}" class="rd-actions">
-          <button class="btn btn-warn btn-small" bindtap="returnReview" data-id="{{item._id}}" data-name="{{item.expertName || item.reviewerName}}">退回修改</button>
+          <text wx:else>--</text>
         </view>
 
         <!-- 经费 -->
@@ -78,22 +75,33 @@
           <text wx:if="{{item.fundingComment}}" class="rd-funding-comment">{{item.fundingComment}}</text>
         </view>
 
-        <!-- 各维度得分 -->
-        <view class="rd-dims">
-          <view class="rd-dim-row" wx:for="{{item.dimDetail}}" wx:key="dimId">
-            <text class="rd-dim-name">{{item.dimTitle}}</text>
-            <view class="rd-dim-items">
-              <text class="rd-dim-item" wx:for="{{item.items}}" wx:for-item="sub" wx:key="id">
-                {{sub.label}}：<text class="rd-dim-score">{{sub.score}}/{{sub.maxScore}}</text>
-              </text>
-            </view>
-          </view>
+        <!-- 退回按钮（仅 submitted/resubmitted 状态） -->
+        <view wx:if="{{item.status === 'submitted' || item.status === 'resubmitted'}}" class="rd-actions">
+          <button class="btn btn-outline btn-small" style="color:#ee0a24;border-color:#ee0a24"
+                  bindtap="returnReview" data-id="{{item._id}}" data-name="{{item.expertName || item.reviewerName}}">
+            退回修改
+          </button>
         </view>
 
-        <!-- 意见 -->
-        <view class="rd-comments" wx:if="{{item.comments}}">
-          <text class="rd-comments-label">评审意见：</text>
-          <text class="rd-comments-text">{{item.comments}}</text>
+        <!-- 展开详情 -->
+        <view wx:if="{{expandedReviewers[item._id]}}" class="rd-expand">
+          <!-- 各维度得分 -->
+          <view class="rd-dims">
+            <view class="rd-dim-row" wx:for="{{item.dimDetail}}" wx:key="dimId">
+              <text class="rd-dim-name">{{item.dimTitle}}</text>
+              <view class="rd-dim-items">
+                <text class="rd-dim-item" wx:for="{{item.items}}" wx:for-item="sub" wx:key="id">
+                  {{sub.label}}：<text class="rd-dim-score">{{sub.score}}/{{sub.maxScore}}</text>
+                </text>
+              </view>
+            </view>
+          </view>
+
+          <!-- 意见 -->
+          <view class="rd-comments" wx:if="{{item.comments}}">
+            <text class="rd-comments-label">评审意见：</text>
+            <text class="rd-comments-text">{{item.comments}}</text>
+          </view>
         </view>
       </view>
     </view>
