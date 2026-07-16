@@ -77,13 +77,6 @@ Page({
     if (review) {
       this.applyReview(review);
       this.setData({ isEdit: true, savedReviewId: review._id, version: review.version || 1 });
-      return;
-    }
-    // DEBUG 兜底：从 Storage 找（仅 DEBUG）
-    if (DEBUG_MODE) {
-      const allRev = wx.getStorageSync('cr_reviews_all') || [];
-      const saved = allRev.find(r => r.assignmentId === this.data.assignmentId);
-      if (saved) { this.applyReview(saved); this.setData({ isEdit: true, savedReviewId: saved._id, version: saved.version || 1 }); }
     }
   },
 

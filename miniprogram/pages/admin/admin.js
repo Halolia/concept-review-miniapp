@@ -40,10 +40,10 @@ Page({
   async loadData() {
     this.setData({ loading: true });
     try {
-      const [projects, users, assignments, rounds] = await Promise.all([
+      // 先加载项目和用户和批次
+      const [projects, users, rounds] = await Promise.all([
         adminListProjects(),
         adminListUsers(),
-        adminListAssignments(),
         adminListReviewRounds()
       ]);
 
@@ -62,7 +62,13 @@ Page({
         selectedRoundId = roundsList.length > 0 ? roundsList[0]._id : '';
       }
 
-      // 丰富项目数据
+      // 按选中批次加载指派
+      let assignments = [];
+      if (selectedRoundId) {
+        try { assignments = await adminListAssignments(selectedRoundId); } catch (e) {}
+      }
+
+      // 只按当前批次丰富项目数据
       const enrichedProjects = (projects || []).map(p => {
         const projAssignments = (assignments || []).filter(a => a.projectId === p._id);
         const assignedReviewers = projAssignments.map(a => {
@@ -123,9 +129,10 @@ Page({
     } catch (e) {}
   },
 
-  selectRound(e) {
+  async selectRound(e) {
     const id = e.currentTarget.dataset.id;
     this.setData({ selectedRoundId: id });
+    await this.loadData();
   },
 
   async openRound(e) {
@@ -320,7 +327,7 @@ Page({
     }
     try {
       await adminCreateOrBindUser({
-        openid: openid.trim() || 'placeholder_' + Date.now(),
+        openid: openid.trim(),
         name: name.trim(),
         role: 'expert',
         organization: this.data.newReviewer.organization.trim(),

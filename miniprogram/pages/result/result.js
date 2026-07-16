@@ -1,5 +1,5 @@
 const { isAdmin, isLeader } = require('../../services/authService');
-const { adminGetProjectResult } = require('../../services/reviewService');
+const { adminGetProjectResult, adminReturnReview } = require('../../services/reviewService');
 const { adminGetSummary } = require('../../services/summaryService');
 const { SCORING_DIMENSIONS, getGrade } = require('../../utils/scoring');
 const { DEBUG_MODE } = require('../../utils/request');
@@ -64,5 +64,27 @@ Page({
         reviewStatus: ranking ? ranking.reviewStatus : '未开始'
       });
     } catch (e) { this.setData({ loading: false }); }
+  },
+
+  // ── 管理员退回评审 ──
+  returnReview(e) {
+    const { id, name } = e.currentTarget.dataset;
+    wx.showModal({
+      title: `退回 ${name || ''} 的评审`,
+      content: '退回后专家可以修改并重新提交。请填写退回原因：',
+      editable: true,
+      placeholderText: '请输入退回原因',
+      success: async (res) => {
+        if (!res.confirm || !res.content) {
+          wx.showToast({ title: '请填写退回原因', icon: 'none' });
+          return;
+        }
+        try {
+          await adminReturnReview(id, res.content);
+          wx.showToast({ title: '已退回', icon: 'success' });
+          this.loadData();
+        } catch (e) {}
+      }
+    });
   }
 });

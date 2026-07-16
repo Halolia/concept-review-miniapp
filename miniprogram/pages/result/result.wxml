@@ -66,6 +66,11 @@
           <text wx:elif="{{item.status === 'draft'}}">📝 草稿</text>
         </view>
 
+        <!-- 退回按钮（仅管理员可见，仅 submitted/resubmitted 状态） -->
+        <view wx:if="{{item.status === 'submitted' || item.status === 'resubmitted'}}" class="rd-actions">
+          <button class="btn btn-warn btn-small" bindtap="returnReview" data-id="{{item._id}}" data-name="{{item.expertName || item.reviewerName}}">退回修改</button>
+        </view>
+
         <!-- 经费 -->
         <view class="rd-funding" wx:if="{{item.recommendedFunding || item.recommendedFunding === 0}}">
           <text class="rd-funding-label">💰 建议经费：</text>

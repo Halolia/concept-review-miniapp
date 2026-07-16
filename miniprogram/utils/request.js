@@ -266,8 +266,11 @@ async function localFallback(action, data) {
     }
 
     case 'adminForceCloseReviewRound': {
+      if (!data.reason) return { ok: false, code: 'REASON_REQUIRED', message: '强制关闭需要填写原因' };
       const rf = debugData.rounds.find(r => r._id === data.roundId);
       if (!rf) return { ok: false, code: 'NOT_FOUND', message: '批次不存在' };
+      if (rf.status === 'closed') return { ok: false, code: 'STATUS_ERROR', message: '批次已关闭' };
+      if (rf.status === 'draft') return { ok: false, code: 'STATUS_ERROR', message: '草稿批次不可强制关闭' };
       rf.status = 'closed'; rf.closedAt = Date.now();
       debugData.assignments.forEach(a => { if (a.roundId === data.roundId && !['submitted', 'resubmitted', 'locked', 'removed'].includes(a.status)) a.status = 'closed_unsubmitted'; });
       debugData.reviews.forEach(r => { if (r.roundId === data.roundId && ['submitted', 'resubmitted'].includes(r.status)) r.status = 'locked'; });
@@ -307,7 +310,13 @@ async function localFallback(action, data) {
 
     case 'adminReturnReview': {
       const rr = debugData.reviews.find(r => r._id === data.reviewId);
-      if (rr) { rr.status = 'returned'; rr.returnReason = data.reason; wx.setStorageSync('cr_reviews_all', debugData.reviews); }
+      if (rr) {
+        rr.status = 'returned'; rr.returnReason = data.reason;
+        wx.setStorageSync('cr_reviews_all', debugData.reviews);
+        // 同步 assignment 状态
+        const asgn = debugData.assignments.find(a => a._id === rr.assignmentId);
+        if (asgn) { asgn.status = 'returned'; asgn.updatedAt = Date.now(); }
+      }
       return { ok: true, data: rr };
     }
 
@@ -365,7 +374,8 @@ async function localFallback(action, data) {
       const proj3 = debugData.projects.find(p => p._id === asgn2.projectId);
       if (proj3 && proj3.status === 'archived') return { ok: false, code: 'PROJECT_ARCHIVED', message: '项目已归档' };
       const existing = debugData.reviews.find(r => r.assignmentId === aid2);
-      const draft = { _id: existing ? existing._id : aid2, projectId: asgn2.projectId, roundId: asgn2.roundId, assignmentId: aid2, expertId: rid, expertName: rname, scores: data.reviewData.scores || {}, totalScore: 0, grade: '', comments: data.reviewData.comments || '', recommendedFunding: Number(data.reviewData.recommendedFunding) || 0, fundingComment: data.reviewData.fundingComment || '', status: 'draft', version: existing ? existing.version : 1, submittedAt: null, updatedAt: Date.now(), createdAt: existing ? existing.createdAt : Date.now() };
+      const draftFunding = data.reviewData.recommendedFunding !== undefined && data.reviewData.recommendedFunding !== '' ? Number(data.reviewData.recommendedFunding) : null;
+      const draft = { _id: existing ? existing._id : aid2, projectId: asgn2.projectId, roundId: asgn2.roundId, assignmentId: aid2, expertId: rid, expertName: rname, scores: data.reviewData.scores || {}, totalScore: 0, grade: '', comments: data.reviewData.comments || '', recommendedFunding: draftFunding, fundingComment: data.reviewData.fundingComment || '', status: 'draft', version: existing ? existing.version : 1, submittedAt: null, updatedAt: Date.now(), createdAt: existing ? existing.createdAt : Date.now() };
       if (existing) { const i = debugData.reviews.indexOf(existing); debugData.reviews[i] = draft; } else { debugData.reviews.push(draft); }
       asgn2.status = 'draft'; wx.setStorageSync('cr_reviews_all', debugData.reviews);
       return { ok: true, data: draft };

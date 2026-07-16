@@ -1,0 +1,8 @@
+{
+  "name": "concept-review-miniapp",
+  "version": "1.0.2",
+  "private": true,
+  "scripts": {
+    "test": "node tests/run-all.js"
+  }
+}

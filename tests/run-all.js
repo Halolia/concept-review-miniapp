@@ -7,6 +7,11 @@ const tests = [
   'request-error.test.js',
   'summary.test.js',
   'round.test.js',
+  'assignment-flow.test.js',
+  'review-state.test.js',
+  'leader-permission.test.js',
+  'openid.test.js',
+  'multi-round.test.js',
 ];
 
 let totalPassed = 0;

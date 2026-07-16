@@ -405,31 +405,28 @@ async function adminReturnReview(user, { reviewId, reason }) {
 // P1-8: 只统计有效状态
 async function adminGetProjectResult(user, { projectId, roundId, includeNonFinal }) {
   if (!projectId) return { ok: false, code: 'INVALID_PARAM', message: '缺少项目ID' };
-  let query = { projectId };
-  if (roundId) query.roundId = roundId;
+  if (!roundId) return { ok: false, code: 'INVALID_PARAM', message: '缺少评审批次ID' };
+  let query = { projectId, roundId };
   if (!includeNonFinal) query.status = _.in(['submitted', 'resubmitted', 'locked']);
   const reviews = await db.collection('reviews').where(query).get();
   return { ok: true, data: reviews.data };
 }
 
 async function adminGetSummary(user, { roundId }) {
-  let query = { status: _.in(['submitted', 'resubmitted', 'locked']) };
-  if (roundId) query.roundId = roundId;
+  if (!roundId) return { ok: false, code: 'INVALID_PARAM', message: '缺少评审批次ID' };
+  let query = { status: _.in(['submitted', 'resubmitted', 'locked']), roundId };
   const reviews = await db.collection('reviews').where(query).get();
 
-  let asgnQuery = { status: _.neq('removed') };
-  if (roundId) asgnQuery.roundId = roundId;
+  let asgnQuery = { status: _.neq('removed'), roundId };
   const assignments = await db.collection('review_assignments').where(asgnQuery).get();
 
-  let projQuery = { status: _.neq('terminated') };
-  if (roundId) {
-    const assignedProjectIds = [...new Set(assignments.data.map(a => a.projectId))];
-    projQuery._id = _.in(assignedProjectIds);
-  }
-  const projects = await db.collection('projects').where(projQuery).get();
+  const assignedProjectIds = [...new Set(assignments.data.map(a => a.projectId))];
+  const projects = assignedProjectIds.length > 0
+    ? (await db.collection('projects').where({ _id: _.in(assignedProjectIds), status: _.neq('terminated') }).get()).data
+    : [];
 
-  const round = roundId ? (await db.collection('review_rounds').doc(roundId).get()).data : null;
-  return { ok: true, data: buildSummary(projects.data, reviews.data, assignments.data, round) };
+  const round = (await db.collection('review_rounds').doc(roundId).get()).data;
+  return { ok: true, data: buildSummary(projects, reviews.data, assignments.data, round) };
 }
 
 function leaderGetSummary(user, { roundId }) {
@@ -446,15 +443,16 @@ async function expertListProjects(user) {
   return { ok: true, data: projects.data };
 }
 
-async function expertGetProjectDetail(user, { projectId }) {
-  if (!projectId) return { ok: false, code: 'INVALID_PARAM', message: '缺少项目ID' };
-  const assignments = await db.collection('review_assignments').where({ projectId, expertId: user._id, status: _.neq('removed') }).get();
-  if (!assignments.data || assignments.data.length === 0) return { ok: false, code: 'NOT_ASSIGNED', message: '您未被分配到此项目' };
-  const assignment = assignments.data[0];
-  const project = await db.collection('projects').doc(projectId).get();
+async function expertGetProjectDetail(user, { assignmentId }) {
+  if (!assignmentId) return { ok: false, code: 'INVALID_PARAM', message: '缺少指派ID' };
+  const assignmentRes = await db.collection('review_assignments').doc(assignmentId).get();
+  if (!assignmentRes.data) return { ok: false, code: 'NOT_FOUND', message: '指派不存在' };
+  const assignment = assignmentRes.data;
+  if (assignment.expertId !== user._id) return { ok: false, code: 'NOT_ASSIGNED', message: '您未被分配到此项目' };
+  if (assignment.status === 'removed') return { ok: false, code: 'ASSIGNMENT_REMOVED', message: '该指派已被移除' };
+  const project = await db.collection('projects').doc(assignment.projectId).get();
   if (!project.data) return { ok: false, code: 'NOT_FOUND', message: '项目不存在' };
   if (project.data.status !== 'active') return { ok: false, code: 'PROJECT_ARCHIVED', message: '项目已归档' };
-  // 使用 assignment.roundId 查批次，保证数据一致
   const round = await db.collection('review_rounds').doc(assignment.roundId).get().catch(() => ({ data: null }));
   return { ok: true, data: { project: project.data, assignment, currentRound: round.data } };
 }
